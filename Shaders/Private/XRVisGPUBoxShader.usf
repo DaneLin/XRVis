@@ -1,0 +1,98 @@
+﻿#include "/Engine/Public/Platform.ush"
+
+
+uint rowsNum;
+uint colsNum;
+float widthx;
+float widthy;
+float spaceX;
+float spaceY;
+// height datas
+StructuredBuffer<float> Height : register(t0);
+
+RWStructuredBuffer<float3> OutputVertices : register(u0);
+RWStructuredBuffer<int> OutputIndices : register(u1);
+RWStructuredBuffer<float3> OutputNormals : register(u2);
+RWStructuredBuffer<float2> OutputUVs : register(u3);
+RWStructuredBuffer<float4> OutputVertexColors : register(u4);
+
+[numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
+void MainCS(uint3 DTid : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex )
+{
+    uint boxIndex = DTid.x;
+    if (boxIndex >= rowsNum * colsNum) return;
+
+	// current row and col
+    uint row = boxIndex / colsNum;
+    uint col = boxIndex % colsNum;
+
+
+    uint baseVertexIndex = boxIndex * 24;
+    uint baseIndexIndex = boxIndex * 36;
+    float3 currentPosition = float3(spaceX * col, spaceY * row, 0);
+    float height = Height[boxIndex];
+
+    float3 positions[8] = {
+        float3(0, widthx, 0) + currentPosition,
+        float3(widthy, widthx, 0) + currentPosition,
+        float3(widthy, 0, 0) + currentPosition,
+        float3(0, 0, 0) + currentPosition,
+        float3(0, widthx, height) + currentPosition,
+        float3(widthy, widthx, height) + currentPosition,
+        float3(widthy, 0, height) + currentPosition,
+        float3(0, 0, height) + currentPosition
+    };
+
+    float3 normals[6] = {
+        float3(0, 1, 0),  // Front
+        float3(0, -1, 0), // Back
+        float3(-1, 0, 0), // Left
+        float3(1, 0, 0),  // Right
+        float3(0, 0, 1),  // Top
+        float3(0, 0, -1)  // Bottom
+    };
+
+    uint indices[24] = {
+        // Front face
+        0, 1, 5, 4,
+        // Back face
+        2, 3, 7,  6,
+        // Left face
+        3, 0, 4, 7,
+        // Right face
+        1, 2, 6, 5,
+        // Top face
+        4, 5, 6, 7,
+        // Bottom face
+        0, 3, 2, 1
+    };
+
+    float2 uvs[4] = {
+        float2(0, 1),
+        float2(1, 1),
+        float2(1, 0),
+        float2(0, 0),
+    };
+    // box for six faces
+    for (uint i = 0; i < 6; i++)
+    {
+        uint vertexStart = baseVertexIndex + i * 4;
+        uint indexStart = baseIndexIndex + i * 6;
+
+        // every face with 4 vertices
+        for (uint j = 0; j < 4; j++)
+        {
+            OutputVertices[vertexStart + j] = float3(positions[indices[i * 4 + j]]);
+            OutputNormals[vertexStart + j] = normals[i];
+            OutputUVs[vertexStart + j] = uvs[j];
+            OutputVertexColors[vertexStart + j] = float4(1.0, 1.0, 1.0, 1.0);
+        }
+
+        OutputIndices[indexStart + 0] = vertexStart + 0;
+        OutputIndices[indexStart + 1] = vertexStart + 1;
+        OutputIndices[indexStart + 2] = vertexStart + 2;
+        OutputIndices[indexStart + 3] = vertexStart + 0;
+        OutputIndices[indexStart + 4] = vertexStart + 2;
+        OutputIndices[indexStart + 5] = vertexStart + 3;
+    }
+}
