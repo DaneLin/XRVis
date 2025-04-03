@@ -10,6 +10,9 @@ public class XRVisRuntime : ModuleRules
             new string[]
             {
                 "Core",
+                "RHI",
+                "Renderer",
+                "RenderCore",
                 "ProceduralMeshComponent",
                 "Json"
             }

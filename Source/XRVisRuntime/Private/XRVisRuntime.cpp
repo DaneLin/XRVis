@@ -7,8 +7,8 @@
 void FXRVisRuntimeModule::StartupModule()
 {
 	// 将实际shader路径映射到引擎中
-	FString PluginShaderDirectroy = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("XRVis"))->GetBaseDir(), TEXT("Shaders"));
-	AddShaderSourceDirectoryMapping("/Plugins/XRVis", PluginShaderDirectroy);
+	FString PluginShaderDirectroy = FPaths::Combine(IPluginManager::Get().FindPlugin(TEXT("XRVis"))->GetBaseDir(), TEXT("Shaders/Private"));
+	AddShaderSourceDirectoryMapping("/XRVis", PluginShaderDirectroy);
 }
 
 void FXRVisRuntimeModule::ShutdownModule()

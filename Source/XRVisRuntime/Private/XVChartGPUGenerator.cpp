@@ -50,7 +50,7 @@ public:
 	}
 };
 
-IMPLEMENT_GLOBAL_SHADER(FXVGPUBoxShaderDeclaration, "/Plugins/XRVis/Private/XRVisGPUBoxShader.usf", "MainCS", SF_Compute);
+IMPLEMENT_GLOBAL_SHADER(FXVGPUBoxShaderDeclaration, "/XRVis/XRVisGPUBoxShader.usf", "MainCS", SF_Compute);
 
 void UXVChartGPUGenerator::DispatchRenderThread(FRHICommandListImmediate& RHICmdList, FXVGPUBoxDispatchParams Params,
 	TFunction<void(FGPUBoxOutputPtr)> AsyncCallback)
