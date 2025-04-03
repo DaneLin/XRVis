@@ -17,9 +17,7 @@ AXVPieChart::AXVPieChart(): TimeSinceLastUpdate(0), GradientFactor(0), AngleConv
 	ZoomOffset = 20.f;
 }
 
-void AXVPieChart::Create3DPieChart(const TMap<FString, float>& Data, EPieChartStyle ChartStyle,
-                                   const TArray<FColor>& PieChartColor,
-                                   EPieShape Shape)
+void AXVPieChart::Create3DPieChart(const TMap<FString, float>& Data, EPieChartStyle ChartStyle,const TArray<FColor>& PieChartColor,EPieShape Shape)
 {
 	TotalCountOfValue = Data.Num();
 
@@ -63,6 +61,10 @@ void AXVPieChart::Set3DPieChart(EPieChartStyle ChartStyle, const TArray<FColor>&
 	}
 
 	ProcessTypeAndShapeInfo();
+
+#if WITH_EDITOR
+	ConstructMesh(1);
+#endif
 }
 
 void AXVPieChart::ColorModify(int ModifyIndex, const FColor& Color)

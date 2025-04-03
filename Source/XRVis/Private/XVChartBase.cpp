@@ -37,8 +37,8 @@ void AXVChartBase::SetStyle()
 
 void AXVChartBase::ConstructMesh(double Rate)
 {
-	ProceduralMeshComponent->ClearCollisionConvexMeshes();
 	ProceduralMeshComponent->ClearAllMeshSections();
+	ProceduralMeshComponent->ClearCollisionConvexMeshes();
 }
 
 void AXVChartBase::PrepareMeshSections()
@@ -47,6 +47,8 @@ void AXVChartBase::PrepareMeshSections()
 	ProceduralMeshComponent->ClearCollisionConvexMeshes();
 	SectionInfos.Empty();
 	SectionInfos.SetNum(TotalCountOfValue + 1);
+	LabelComponents.Empty();
+	LabelComponents.SetNum(TotalCountOfValue);
 	VerticesBackup.Empty();
 }
 

@@ -112,6 +112,10 @@ void AXVBarChart::Create3DHistogramChart(const FString& Data, EHistogramChartSty
 {
 	Set3DHistogramChart(InHistogramChartStyle, InHistogramChartShape);
 	SetValue(Data);
+#if WITH_EDITOR
+	ConstructMesh(1);
+#endif
+	
 }
 
 void AXVBarChart::Set3DHistogramChart(EHistogramChartStyle InHistogramChartStyle, EHistogramChartShape InHistogramChartShape)
@@ -233,33 +237,9 @@ void AXVBarChart::GenerateAllMeshInfo()
 				DynamicMaterialInstances[CurrentIndex] = UMaterialInstanceDynamic::Create(BaseMaterial, this);
 				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
 				ProceduralMeshComponent->SetMaterial(CurrentIndex, DynamicMaterialInstances[CurrentIndex]);
-				
-				CurrentIndex++;
-			}
-		}
-	}
-
-	// 创建对应文本
-	{
-		size_t CurrentIndex = 0;
-		for (size_t IndexOfY = 0; IndexOfY < RowCounts; IndexOfY++)
-		{
-			for (size_t IndexOfX = 0; IndexOfX < XYZs[IndexOfY].Num(); IndexOfX++)
-			{
-				int Height = XYZs[IndexOfY][IndexOfX];
 				SectionsHeight[CurrentIndex] = Height;
-				UTextRenderComponent* Label = NewObject<
-					UTextRenderComponent>(this, UTextRenderComponent::StaticClass());
-				Label->SetText(UKismetTextLibrary::Conv_IntToText(Height));
-				Label->SetTextRenderColor(FColor::Black);
-
-				Label->SetHorizontalAlignment(EHorizTextAligment::EHTA_Center);
-				Label->SetVerticalAlignment(EVerticalTextAligment::EVRTA_TextCenter);
-				Label->RegisterComponent();
-				Label->MarkRenderStateDirty();
-				Label->SetVisibility(false);
-				LabelComponents.Add(Label);
-
+				LabelComponents[CurrentIndex] = XVChartUtils::CreateTextRenderComponent(this,UKismetTextLibrary::Conv_IntToText(SectionsHeight[CurrentIndex]),FColor::Cyan, false );
+			
 				CurrentIndex++;
 			}
 		}

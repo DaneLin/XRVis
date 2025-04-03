@@ -55,10 +55,18 @@ void XVChartUtils::AddBaseQuad(TArray<FXVChartSectionInfo>& SectionInfos,
                              const FVector2D& InThirdUV, const FVector2D& InFouthUV, const FProcMeshTangent& Tangent,
                              const FColor& TriangleColor)
 {
-	AddBaseTriangle(SectionInfos, SectionIndex, InFirstPoint, InSecondPoint, InThirdPoint, InQuadNormal,
-	                InQuadNormal, InQuadNormal, InFirstUV, InSecondUV, InThirdUV, Tangent, TriangleColor);
-	AddBaseTriangle(SectionInfos, SectionIndex, InThirdPoint, InFouthPoint, InFirstPoint, InQuadNormal,
-	                InQuadNormal, InQuadNormal, InThirdUV, InFouthUV, InFirstUV, Tangent, TriangleColor);
+	AddBaseTriangle(SectionInfos, SectionIndex,
+		InFirstPoint, InSecondPoint, InThirdPoint,
+		InQuadNormal,InQuadNormal, InQuadNormal,
+		InFirstUV, InSecondUV, InThirdUV,
+		Tangent,
+		TriangleColor);
+	AddBaseTriangle(SectionInfos, SectionIndex,
+		InThirdPoint, InFouthPoint, InFirstPoint,
+		InQuadNormal,InQuadNormal, InQuadNormal,
+		InThirdUV, InFouthUV, InFirstUV,
+		Tangent,
+		TriangleColor);
 }
 
 void XVChartUtils::CalcAnglePlaneInfo(const FVector& CenterPosition, const size_t& Angle, const float& PlaneNearDis,
@@ -141,11 +149,7 @@ void XVChartUtils::CreateSphere(TArray<FXVChartSectionInfo>& SectionInfos, const
 			const float CosTheta = FMath::Cos(Theta);
 			
 			// 计算球面上的点
-			FVector VertexPosition(
-				SphereRadius * SinPhi * CosTheta,
-				SphereRadius * SinPhi * SinTheta,
-				SphereRadius * CosPhi
-			);
+			FVector VertexPosition(SphereRadius * SinPhi * CosTheta,SphereRadius * SinPhi * SinTheta,SphereRadius * CosPhi);
 			
 			// 添加世界位置偏移
 			VertexPosition += InPosition;
@@ -154,10 +158,7 @@ void XVChartUtils::CreateSphere(TArray<FXVChartSectionInfo>& SectionInfos, const
 			FVector Normal = (VertexPosition - InPosition).GetSafeNormal();
 			
 			// 计算UV坐标
-			FVector2D UV(
-				static_cast<float>(SliceIndex) / ActualSlices,
-				static_cast<float>(StackIndex) / ActualStacks
-			);
+			FVector2D UV(static_cast<float>(SliceIndex) / ActualSlices,static_cast<float>(StackIndex) / ActualStacks);
 			
 			// 添加顶点
 			int32 VertexIndex = SectionInfos[SectionIndex].Vertices.Emplace(VertexPosition);
@@ -194,8 +195,7 @@ void XVChartUtils::CreateSphere(TArray<FXVChartSectionInfo>& SectionInfos, const
 	}
 }
 
-UTextRenderComponent* XVChartUtils::CreateTextRenderComponent(UObject* Outer, const FText& Text, FColor Color,
-	bool bVisible)
+UTextRenderComponent* XVChartUtils::CreateTextRenderComponent(UObject* Outer, const FText& Text, FColor Color, bool bVisible)
 {
 	UTextRenderComponent* Label = NewObject<UTextRenderComponent>(Outer, UTextRenderComponent::StaticClass());
 	Label->SetText(Text);
@@ -211,17 +211,13 @@ UTextRenderComponent* XVChartUtils::CreateTextRenderComponent(UObject* Outer, co
 FHitResult XVChartUtils::GetCursorHitResult(const UWorld* World)
 {
 	{
-		FVector WorldLocation;
-		FVector WorldDirection;
+		FVector WorldLocation, WorldDirection;
 
 		APlayerController* PlayerController = World->GetFirstPlayerController();
-		PlayerController->DeprojectMousePositionToWorld(
-			WorldLocation, WorldDirection
-		);
+		PlayerController->DeprojectMousePositionToWorld(WorldLocation, WorldDirection);
+		
 		FHitResult HitResult;
-		World->LineTraceSingleByChannel(HitResult, WorldLocation,
-											 WorldLocation + WorldDirection * PlayerController->HitResultTraceDistance,
-											 ECC_Visibility);
+		World->LineTraceSingleByChannel(HitResult, WorldLocation,WorldLocation + WorldDirection * PlayerController->HitResultTraceDistance,ECC_Visibility);
 		return HitResult;
 	}
 }

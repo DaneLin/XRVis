@@ -122,14 +122,7 @@ void AXVLineChart::UpdateOnMouseEnterOrLeft()
 				if (HoveredIndex != -1 && HoveredIndex != CurrentIndex && !TotalSelection[HoveredIndex])
 				{
 					DynamicMaterialInstances[HoveredIndex]->SetScalarParameterValue("EmissiveIntensity", 0);
-					ProceduralMeshComponent->UpdateMeshSection_LinearColor(
-						HoveredIndex,
-						SectionInfos[HoveredIndex].Vertices,
-						SectionInfos[HoveredIndex].Normals,
-						SectionInfos[HoveredIndex].UVs,
-						SectionInfos[HoveredIndex].VertexColors,
-						SectionInfos[HoveredIndex].Tangents,
-						false);
+					UpdateMeshSection(HoveredIndex);
 					LabelComponents[HoveredIndex]->SetVisibility(false);
 					LabelComponents[HoveredIndex]->MarkRenderStateDirty();
 				}
@@ -137,17 +130,9 @@ void AXVLineChart::UpdateOnMouseEnterOrLeft()
 				{
 					HoveredIndex = CurrentIndex;
 					DynamicMaterialInstances[HoveredIndex]->SetScalarParameterValue("EmissiveIntensity", EmissiveIntensity);
-					ProceduralMeshComponent->UpdateMeshSection_LinearColor(
-						HoveredIndex,
-						SectionInfos[HoveredIndex].Vertices,
-						SectionInfos[HoveredIndex].Normals,
-						SectionInfos[HoveredIndex].UVs,
-						SectionInfos[HoveredIndex].VertexColors,
-						SectionInfos[HoveredIndex].Tangents,
-						false);
+					UpdateMeshSection(HoveredIndex);
 
-					FRotator CamRotation = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->
-					                                   GetCameraRotation();
+					FRotator CamRotation = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraRotation();
 					CamRotation.Yaw += 180;
 					CamRotation.Pitch *= -1;
 					FRotator TextRotation(CamRotation);
@@ -172,6 +157,7 @@ void AXVLineChart::UpdateOnMouseEnterOrLeft()
 			ProceduralMeshComponent->ClearMeshSection(HoveredIndex);
 			DynamicMaterialInstances[HoveredIndex]->SetScalarParameterValue("EmissiveIntensity", 0);
 			ProceduralMeshComponent->SetMaterial(HoveredIndex,DynamicMaterialInstances[HoveredIndex] );
+			
 			ProceduralMeshComponent->CreateMeshSection_LinearColor(
 				HoveredIndex,
 				SectionInfos[HoveredIndex].Vertices,
@@ -237,6 +223,10 @@ void AXVLineChart::Create3DLineChart(const FString& Data, ELineChartStyle ChartS
 	Set3DLineChart(ChartStyle, LineChartColor);
 
 	SetValue(Data);
+
+#if WITH_EDITOR
+	ConstructMesh(1);
+#endif
 }
 
 void AXVLineChart::SetValue(const FString& InValue)
@@ -286,7 +276,7 @@ void AXVLineChart::SetValue(const FString& InValue)
 	RowCounts = XYZs.Num();
 	LineSelection.SetNum(RowCounts);
 	TotalSelection.SetNum(TotalCountOfValue);
-	LabelComponents.SetNum(TotalCountOfValue);
+	
 	DynamicMaterialInstances.Empty();
 	DynamicMaterialInstances.SetNum(TotalCountOfValue + 1);
 	SectionSelectStates.Init(false, TotalCountOfValue + 1);

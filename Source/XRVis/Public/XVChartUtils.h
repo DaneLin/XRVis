@@ -17,6 +17,7 @@ USTRUCT()
 struct FXVChartSectionInfo
 {
 	GENERATED_BODY()
+	
 	TArray<FVector> Vertices;
 	TArray<int32> Indices;
 	TArray<FVector> Normals;
@@ -97,6 +98,7 @@ public:
 	
 	static FHitResult GetCursorHitResult(const UWorld* World);
 
+	/* 辅助函数，从相关路径加载资源 */
 	template<typename T>
 	static void LoadResourceFromPath(const TCHAR* ObjectToFind, T*& OutResource )
 	{
