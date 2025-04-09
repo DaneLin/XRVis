@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/PrimitiveComponent.h"
 #include "Materials/MaterialInterface.h"
+#include "Rendering/XRVisSceneViewExtension.h"
 #include "XRVisPrimitiveComponent.generated.h"
 
 class FPrimitiveSceneProxy;
@@ -23,11 +24,14 @@ class XRVIS_API UXRVisPrimitiveComponent : public UPrimitiveComponent
 	virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
 	//~ Begin USceneComponent Interface.
 
+	TSharedPtr<FXRVisSceneViewExtension, ESPMode::ThreadSafe > SceneViewExtension;
+
 	FXRVisGeometryGenerator* GeometryGenerator;
 	
 public:
 	// Sets default values for this component's properties
 	UXRVisPrimitiveComponent();
+	~UXRVisPrimitiveComponent();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 

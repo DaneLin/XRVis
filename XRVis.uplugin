@@ -24,11 +24,6 @@
 			"Name": "XRVisRuntime",
 			"Type": "Runtime",
 			"LoadingPhase": "PostConfigInit"
-		},
-		{
-			"Name": "XRVisRuntime",
-			"Type": "Runtime",
-			"LoadingPhase": "PostConfigInit"
 		}
 	],
 	"Plugins": [

@@ -4,6 +4,8 @@
 #include "Rendering/XRVisRenderUtils.h"
 #include "RenderGraphBuilder.h"
 
+DECLARE_GPU_DRAWCALL_STAT(BoxGeneration); // Unreal Insights
+
 IMPLEMENT_GLOBAL_SHADER(FXRVisBoxGenCS, "/XRVis/XRVisGPUBoxShader.usf", "MainCS", SF_Compute);
 
 
@@ -30,6 +32,9 @@ void FXRVisBoxGeometryGenerator::GenerateGeometry_RenderThread(FRDGBuilder& Grap
 		return;
 	}
 
+	RDG_GPU_STAT_SCOPE(GraphBuilder, BoxGeneration); // Unreal Insights
+	RDG_EVENT_SCOPE(GraphBuilder,  "Box Generation"); // RenderDoc
+	
 	// 计算实际需要的缓冲区大小
 	const uint32 NumBoxes = Params.RowCount * Params.ColumnCount;
 	constexpr uint32 VerticesPerBox = 24;
@@ -45,7 +50,7 @@ void FXRVisBoxGeometryGenerator::GenerateGeometry_RenderThread(FRDGBuilder& Grap
     
 	// 创建输出缓冲区
 	FRDGBufferRef VertexBufferRDG = GraphBuilder.CreateBuffer(
-		FRDGBufferDesc::CreateStructuredDesc(sizeof(FVector4f) , NumVertices),
+		FRDGBufferDesc::CreateStructuredDesc(sizeof(FVector3f) , NumVertices),
 		TEXT("BoxVertexBuffer"));
     
 	FRDGBufferRef IndexBufferRDG = GraphBuilder.CreateBuffer(
@@ -72,7 +77,7 @@ void FXRVisBoxGeometryGenerator::GenerateGeometry_RenderThread(FRDGBuilder& Grap
     
     // 计算线程组数量
     FIntVector GroupCount(
-        FMath::DivideAndRoundUp((int32)NumBoxes, 8),
+        FMath::DivideAndRoundUp((int32)NumBoxes,XRVisBoxParams::ThreadsX),
         1,
         1
     );
@@ -87,10 +92,19 @@ void FXRVisBoxGeometryGenerator::GenerateGeometry_RenderThread(FRDGBuilder& Grap
         PassParameters,
         GroupCount
     );
-    
-    // 将RDG资源转换为持久资源
-	ConvertToExternalRDGBuffer(GraphBuilder, VertexBufferRDG, Results.VertexPooledBuffer, Results.VertexBufferSRV);
-    ConvertToExternalRDGBuffer(GraphBuilder, IndexBufferRDG, Results.IndexPooledBuffer, Results.IndexBufferSRV);
-    ConvertToExternalRDGBuffer(GraphBuilder, DrawIndirectArgsBufferRDG, Results.DrawIndirectArgsPooledBuffer, Results.DrawIndirectArgsBufferSRV);
+	
+	// 转换为外部缓冲区
+	Results.VertexPooledBuffer = GraphBuilder.ConvertToExternalBuffer(VertexBufferRDG);
+	Results.IndexPooledBuffer = GraphBuilder.ConvertToExternalBuffer(IndexBufferRDG);
+	Results.DrawIndirectArgsPooledBuffer = GraphBuilder.ConvertToExternalBuffer(DrawIndirectArgsBufferRDG);
 
+	// // 注册外部缓冲区
+	// GraphBuilder.RegisterExternalBuffer(Results.VertexPooledBuffer);
+	// GraphBuilder.RegisterExternalBuffer(Results.IndexPooledBuffer);
+	// GraphBuilder.RegisterExternalBuffer(Results.DrawIndirectArgsPooledBuffer);
+
+	// 排队提取，但还不能使用
+	GraphBuilder.QueueBufferExtraction(VertexBufferRDG, &Results.VertexPooledBuffer);
+	GraphBuilder.QueueBufferExtraction(IndexBufferRDG, &Results.IndexPooledBuffer);
+	GraphBuilder.QueueBufferExtraction(DrawIndirectArgsBufferRDG, &Results.DrawIndirectArgsPooledBuffer);
 }

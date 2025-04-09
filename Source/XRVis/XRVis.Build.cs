@@ -33,6 +33,7 @@ public class XRVis : ModuleRules
                 "Renderer",
                 "RenderCore",
                 "RHI",
+                "XRVisRuntime"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -48,7 +49,9 @@ public class XRVis : ModuleRules
 				"RenderCore",
 				"RHI",
 				"Projects", 
-				"ProceduralMeshComponent", "GPULightmass",
+				"ProceduralMeshComponent", 
+				"GPULightmass",
+				"XRVisRuntime"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

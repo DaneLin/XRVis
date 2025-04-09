@@ -17,6 +17,11 @@ struct XRVISRUNTIME_API FXRVisGeometryResults
     TRefCountPtr<FRHIShaderResourceView> VertexBufferSRV;
     TRefCountPtr<FRHIShaderResourceView> IndexBufferSRV;
     TRefCountPtr<FRHIShaderResourceView> DrawIndirectArgsBufferSRV;
+
+	bool IsValid() const
+	{
+		return VertexPooledBuffer.IsValid() && IndexPooledBuffer.IsValid() && DrawIndirectArgsPooledBuffer.IsValid();
+	}
 };
 
 /**
@@ -24,8 +29,8 @@ struct XRVISRUNTIME_API FXRVisGeometryResults
  */
 struct XRVISRUNTIME_API FXRVisBoxGeometryParams
 {
-    int32 RowCount = 10;
-    int32 ColumnCount = 10;
+    int32 RowCount = 1000;
+    int32 ColumnCount = 1000;
     float Width = 10.0f;
     float Height = 10.0f;
     float SpaceX = 5.0f;

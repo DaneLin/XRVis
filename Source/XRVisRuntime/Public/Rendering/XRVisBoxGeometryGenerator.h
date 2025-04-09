@@ -11,8 +11,8 @@
 
 namespace XRVisBoxParams
 {
-    static constexpr int32 ThreadsX = 8;
-    static constexpr int32 ThreadsY = 8;
+    static constexpr int32 ThreadsX = 256;
+    static constexpr int32 ThreadsY = 1;
     static constexpr int32 ThreadsZ = 1;
 }
 
@@ -68,9 +68,18 @@ public:
     // 从FXRVisGeometryGenerator继承的方法
     virtual void GenerateGeometry_RenderThread(FRDGBuilder& GraphBuilder, FSceneView& InView) override;
 
+    virtual bool IsResultValid()  override {return Results.IsValid();}
+
     virtual FRHIShaderResourceView* GetVertexBufferSRV() const override { return Results.VertexBufferSRV; }
     virtual FRHIShaderResourceView* GetIndexBufferSRV() const override { return Results.IndexBufferSRV; }
     virtual FRHIShaderResourceView* GetDrawIndirectArgsBufferSRV() const override { return Results.DrawIndirectArgsBufferSRV; }
+
+    virtual FXRVisGeometryResults GetGeometryResult() const override {return Results;}
+    
+    virtual uint32 GetVertexStride() const override
+    {
+        return sizeof(FVector4f);
+    }
 
 private:
 

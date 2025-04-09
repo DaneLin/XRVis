@@ -8,10 +8,32 @@
 #include "MaterialDomain.h"
 #include "MeshDrawShaderBindings.h"
 #include "MeshMaterialShader.h"
+#include "Rendering/XRVisBoxGeometryGenerator.h"
+#include "Rendering/XRVisGeometryGenerator.h"
+#include "Rendering/XRVisSceneViewExtension.h"
 
 #define USING_CUSTOM_VERTEXFACTORY 1
 
 #if USING_CUSTOM_VERTEXFACTORY
+
+/** Index Buffer */
+class FXRVisMeshIndexBuffer : public FIndexBuffer
+{
+public:
+	void SetPooledIndexBuffer(const TRefCountPtr<FRDGPooledBuffer>& InPooledBuffer)
+	{
+		PooledIndexBuffer = InPooledBuffer;
+	}
+
+	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
+	{
+		IndexBufferRHI = PooledIndexBuffer->GetRHI();
+	}
+
+private:
+	TRefCountPtr<FRDGPooledBuffer> PooledIndexBuffer;
+};
+
 /**
  * Uniform buffer for mesh vertex factories.
  */
@@ -38,7 +60,7 @@ public:
 
 	static bool ShouldCompilePermutation(const FVertexFactoryShaderPermutationParameters& Parameters)
 	{
-		return RHISupportsManualVertexFetch(Parameters.Platform);
+		return false;
 	}
 	
 	static void ModifyCompilationEnvironment(const FVertexFactoryShaderPermutationParameters& Parameters, FShaderCompilerEnvironment& OutEnvironment )
@@ -46,92 +68,67 @@ public:
 		FVertexFactory::ModifyCompilationEnvironment(Parameters, OutEnvironment);
 	}
 
-	/**
-     * 使用计算着色器输出的SRV初始化顶点工厂
-     */
-   void InitWithComputeOutput(FRHIShaderResourceView* InVertexBufferSRV, uint32 VertexStride)
-    {
-        ENQUEUE_RENDER_COMMAND(InitXRVisGPUVertexFactory)(
-        [this, InVertexBufferSRV, VertexStride](FRHICommandListImmediate& RHICmdList)
-        {
-            FDataType Data;
-            
-            // 使用正确的构造方法，注意这里需要使用SRV专用的方法
-            Data.PositionComponent = FVertexStreamComponent(
-                nullptr,  // 不使用VertexBuffer，而使用SRV
-                0,        // 位置在结构中的偏移
-                VertexStride,  // 每个顶点的大小
-                VET_Float3,    // 位置数据类型
-                EVertexStreamUsage::Default
-            );
-            // 单独设置SRV
-            Data.PositionComponentSRV = InVertexBufferSRV;
-        	
-            
-            // 法线组件
-            Data.TangentBasisComponents[0] = FVertexStreamComponent(
-                nullptr,
-                sizeof(FVector3f),
-                VertexStride,
-                VET_PackedNormal,
-                EVertexStreamUsage::Default
-            );
-            
-            // 切线组件
-            Data.TangentBasisComponents[1] = FVertexStreamComponent(
-                nullptr,
-                sizeof(FVector3f) + sizeof(FPackedNormal),
-                VertexStride,
-                VET_PackedNormal,
-                EVertexStreamUsage::Default
-            );
-            
-            // UV坐标
-            Data.TextureCoordinates.Add(FVertexStreamComponent(
-                nullptr,
-                sizeof(FVector3f) + sizeof(FPackedNormal) * 2,
-                VertexStride,
-                VET_Float2,
-                EVertexStreamUsage::Default
-            ));
-            
-            // 颜色组件
-            Data.ColorComponent = FVertexStreamComponent(
-                nullptr,
-                sizeof(FVector3f) + sizeof(FPackedNormal) * 2 + sizeof(FVector2f),
-                VertexStride,
-                VET_Color,
-                EVertexStreamUsage::Default
-            );
-            
-            // 设置SRV
-            // 我们需要为所有组件设置相同的SRV
-            Data.TangentsSRV = InVertexBufferSRV;
-            Data.TextureCoordinatesSRV = InVertexBufferSRV;
-            Data.ColorComponentsSRV = InVertexBufferSRV;
-            
-            // 设置数据到顶点工厂
-            SetData(Data);
-            
-            // 初始化资源
-            InitResource(RHICmdList);
-        });
-    }
+	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
+	{
+		check(Streams.Num() == 0);
+
+		FVertexStream PositionVertexStream;
+		PositionVertexStream.VertexBuffer = VertexBuffer;
+		PositionVertexStream.Stride = sizeof(FVector3f);
+		PositionVertexStream.Offset = 0;
+		PositionVertexStream.VertexStreamUsage = EVertexStreamUsage::Default;
+
+		FVertexStream TangentXVertexStream;
+		TangentXVertexStream.VertexBuffer = TangentVertexBuffer;
+		TangentXVertexStream.Stride = 8;
+		TangentXVertexStream.Offset = 0;
+		TangentXVertexStream.VertexStreamUsage = EVertexStreamUsage::Default;
+
+		FVertexStream TangentZVertexStream;
+		TangentZVertexStream.VertexBuffer = TangentVertexBuffer;
+		TangentZVertexStream.Stride = 8;
+		TangentZVertexStream.Offset = 4;
+		TangentZVertexStream.VertexStreamUsage = EVertexStreamUsage::Default;
+
+		FVertexStream ColorVertexStream;
+		ColorVertexStream.VertexBuffer = ColorVertexBuffer;
+		ColorVertexStream.Stride = sizeof(FColor);
+		ColorVertexStream.Offset = 0;
+		ColorVertexStream.VertexStreamUsage = EVertexStreamUsage::Default;
+	
+		// same with VertexFactoryInput
+		const FVertexElement VertexPositionElement(Streams.Add(PositionVertexStream),0, VET_Float3, 0, PositionVertexStream.Stride, false);
+		const FVertexElement VertexTangentXElement(Streams.Add(TangentXVertexStream),0, VET_PackedNormal, 1, TangentXVertexStream.Stride, false);
+		const FVertexElement VertexTangentZElement(Streams.Add(TangentZVertexStream),0, VET_PackedNormal, 2, TangentZVertexStream.Stride, false);
+		const FVertexElement VertexColorElement(Streams.Add(ColorVertexStream), 0,VET_Color, 3, ColorVertexStream.Stride, false);
+	
+		// Vertex declaration
+		FVertexDeclarationElementList Elements;
+		Elements.Add(VertexPositionElement);
+		Elements.Add(VertexTangentXElement);
+		Elements.Add(VertexTangentZElement);
+		Elements.Add(VertexColorElement);
+
+		InitDeclaration(Elements);
+	}
 
 	inline const FUniformBufferRHIRef GetVertexFactoryUniformBuffer() const
 	{
 		return UniformBuffer;
 	}
+
 	
+public:
+	FVertexBuffer* VertexBuffer = nullptr;
+	FVertexBuffer* TangentVertexBuffer = nullptr;
+	FColorVertexBuffer* ColorVertexBuffer = nullptr;
 };
 
 IMPLEMENT_VERTEX_FACTORY_TYPE(FXRVisPrimitiveVertexFactory,"/Engine/Private/LocalVertexFactory.ush",
 	  EVertexFactoryFlags::UsedWithMaterials
-	| EVertexFactoryFlags::SupportsStaticLighting
-	| EVertexFactoryFlags::SupportsDynamicLighting
-	| EVertexFactoryFlags::SupportsPrecisePrevWorldPos
-	| EVertexFactoryFlags::SupportsCachingMeshDrawCommands
-	| EVertexFactoryFlags::DoesNotSupportNullPixelShader
+	// | EVertexFactoryFlags::SupportsStaticLighting
+	// | EVertexFactoryFlags::SupportsDynamicLighting
+	// | EVertexFactoryFlags::SupportsPrecisePrevWorldPos
 );
 
 class FXRVisPrimitiveVertexFactoryShaderParameters : public FVertexFactoryShaderParameters
@@ -178,6 +175,7 @@ public:
 		: FPrimitiveSceneProxy(InComponent)
 		, GeometryGenerator(InComponent->GetGeometryGenerator())
 		, bDrawIndirect(InComponent->bDrawIndirect)
+		, bGPUGenerate(InComponent->bGPUGenerate)
 		, VertexFactory(GetScene().GetFeatureLevel(), "FXRVisPrimitiveSceneProxy")
 	{
 		bWillEverBeLit = false;
@@ -189,46 +187,46 @@ public:
 		UploadIndices.SetNum(36);
 
 		FVector3f Positions[8] = {
-        {0, 100, 0},
-        {100, 100, 0},
-        {100, 000, 0},
-        {0, 0, 0},
-        {0, 100, 100},
-        {100, 100, 100},
-        {100, 0, 100},
-        {0, 0, 100}};
+			{0, 100, 0},
+			{100, 100, 0},
+			{100, 000, 0},
+			{0, 0, 0},
+			{0, 100, 100},
+			{100, 100, 100},
+			{100, 0, 100},
+			{0, 0, 100}};
 
-	    FVector3f Normals[6] = {
-	        {0,  1, 0},  // Front
-	        {0, -1, 0}, // Back
-	        {-1, 0, 0}, // Left
-	        {1,  0, 0},  // Right
-	        {0, 0, 1},  // Top
-	        {0, 0, -1}  // Bottom
-	    };
+		FVector3f Normals[6] = {
+			{0,  1, 0},  // Front
+			{0, -1, 0}, // Back
+			{-1, 0, 0}, // Left
+			{1,  0, 0},  // Right
+			{0, 0, 1},  // Top
+			{0, 0, -1}  // Bottom
+		};
 
-	    int Indices[24] = {
-	        // Front face
-	        0, 1, 5, 4,
-	        // Back face
-	        2, 3, 7,  6,
-	        // Left face
-	        3, 0, 4, 7,
-	        // Right face
-	        1, 2, 6, 5,
-	        // Top face
-	        4, 5, 6, 7,
-	        // Bottom face
-	        0, 3, 2, 1
-	    };
+		int Indices[24] = {
+			// Front face
+			0, 1, 5, 4,
+			// Back face
+			2, 3, 7,  6,
+			// Left face
+			3, 0, 4, 7,
+			// Right face
+			1, 2, 6, 5,
+			// Top face
+			4, 5, 6, 7,
+			// Bottom face
+			0, 3, 2, 1
+		};
 
-	    FVector2f UVs[4] = {
-	        {0, 1},
-	        {1, 1},
-	        {1, 0},
-	        {0, 0},
-	    };
-	    // box for six faces
+		FVector2f UVs[4] = {
+			{0, 1},
+			{1, 1},
+			{1, 0},
+			{0, 0},
+		};
+		// box for six faces
 		{
 			for (size_t i = 0; i < 6; i++)
 			{
@@ -251,19 +249,27 @@ public:
 				UploadIndices[IndexStart + 5] = VertexStart + 3;
 			}
 		}
-	   
+		
+
+			
+		IndexBuffer.Indices = UploadIndices;
+		BeginInitResource(&IndexBuffer);
+
+		if(bGPUGenerate)
+		{
+			
+		}
+		else 
+		{
+			VertexBuffers.InitFromDynamicVertex(&VertexFactory, UploadVertices);
+			
+		}
 
 		Material = InComponent->GetMaterial(0);
 		if (Material == nullptr)
 		{
 			Material = UMaterial::GetDefaultMaterial(MD_Surface);
 		}
-		IndexBuffer.Indices = UploadIndices;
-
-		
-		VertexBuffers.InitFromDynamicVertex(&VertexFactory, UploadVertices);
-		
-		BeginInitResource(&IndexBuffer);
 	}
 
 	virtual ~FXRVisPrimitiveSceneProxy()
@@ -278,9 +284,21 @@ public:
 
 	virtual void CreateRenderThreadResources() override
 	{
-		// TODO : remove this debug code
 		FRHICommandListBase& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
 		
+		if (GeometryGenerator )
+		{
+			VertexFactory.InitResource(RHICmdList);
+
+			if(GeometryGenerator->IsResultValid())
+			{
+				VertexFactory.VertexBuffer->VertexBufferRHI = GeometryGenerator->GetGeometryResult().VertexPooledBuffer->GetRHI();
+				
+				GPUIndexBuffer.SetPooledIndexBuffer(GeometryGenerator->GetGeometryResult().IndexPooledBuffer);
+			}
+		}
+		// TODO : remove this debug code
+	
 		TResourceArray<uint32> InitData;
 		InitData.Add(36 ); // NumIndicesPerInstance
 		InitData.Add(1); // InstanceCount;
@@ -296,7 +314,7 @@ public:
 		QUICK_SCOPE_CYCLE_COUNTER(STAT_CustomSceneProxy_GetDynamicMeshElements);
 
 		FMatrix EffectiveLocalToWorld = GetLocalToWorld();
-		
+
 		for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++)
 		{
 			if (VisibilityMap & (1 << ViewIndex))
@@ -305,7 +323,14 @@ public:
 
 				FMeshBatch& Mesh = Collector.AllocateMesh();
 				FMeshBatchElement& BatchElement = Mesh.Elements[0];
-				BatchElement.IndexBuffer = &IndexBuffer;
+				if (bGPUGenerate && GPUIndexBuffer.IsInitialized())
+				{
+					BatchElement.IndexBuffer = &GPUIndexBuffer;
+				}
+				else
+				{
+					BatchElement.IndexBuffer = &IndexBuffer;
+				}
 				Mesh.bWireframe = false;
 				Mesh.VertexFactory = &VertexFactory;
 				Mesh.MaterialRenderProxy = Material->GetRenderProxy();
@@ -382,7 +407,11 @@ private:
 	FStaticMeshVertexBuffers VertexBuffers;
 	FDynamicMeshIndexBuffer32 IndexBuffer;
 
+	FXRVisMeshIndexBuffer GPUIndexBuffer;
+
 	bool bDrawIndirect;
+	bool bGPUGenerate;
+	
 	FRWBuffer DrawIndirectArgsBuffer;
 
 #if USING_CUSTOM_VERTEXFACTORY
@@ -413,7 +442,32 @@ UXRVisPrimitiveComponent::UXRVisPrimitiveComponent()
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
 
+	bGPUGenerate = true;
 	// ...
+	if(bGPUGenerate)
+	{
+		UE_LOG(LogTemp, Log, TEXT("bGPUGenerate is true"));
+		GeometryGenerator = new FXRVisBoxGeometryGenerator();
+		FXRVisBoxGeometryParams Params;
+		Params.HeightValues.SetNum(Params.RowCount * Params.ColumnCount);
+		for (int x = 0; x < Params.RowCount; ++x)
+		{
+			for (int y = 0; y < Params.ColumnCount; ++y)
+			{
+				Params.HeightValues[x * Params.RowCount + y]=(x * Params.RowCount + y);
+			}
+		}
+		static_cast<FXRVisBoxGeometryGenerator*>(GeometryGenerator)->SetParameters(Params);
+		GeometryGenerator->MarkForUpdate();
+	}
+}
+
+UXRVisPrimitiveComponent::~UXRVisPrimitiveComponent()
+{
+	if(GeometryGenerator)
+	{
+		delete GeometryGenerator;
+	}
 }
 
 void UXRVisPrimitiveComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -443,7 +497,10 @@ void UXRVisPrimitiveComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
+
+
+	SceneViewExtension = FSceneViewExtensions::NewExtension<FXRVisSceneViewExtension>();
+	SceneViewExtension->RegisterGeometryGenerator(GeometryGenerator);
 }
 
 void UXRVisPrimitiveComponent::OnMaterialChanged()

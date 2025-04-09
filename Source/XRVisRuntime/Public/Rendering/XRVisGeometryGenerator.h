@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "RenderGraphResources.h"
+#include "XRVisGeometryTypes.h"
 #include "RenderPasses/XRVisComputePassBase.h"
 
 class FSceneView;
@@ -13,7 +14,7 @@ class XRVISRUNTIME_API FXRVisGeometryGenerator : public FXRVisComputePassBase
 {
 public:
 
-    virtual ~FXRVisGeometryGenerator() = default;
+    virtual ~FXRVisGeometryGenerator() override = default;
 
     // 对外接口 - 用于SceneViewExtension调用
     virtual void GenerateGeometry_RenderThread(FRDGBuilder& GraphBuilder, FSceneView& InView) = 0;
@@ -23,7 +24,10 @@ public:
     virtual FRHIShaderResourceView* GetVertexBufferSRV() const = 0;
     virtual FRHIShaderResourceView* GetIndexBufferSRV() const = 0;
     virtual FRHIShaderResourceView* GetDrawIndirectArgsBufferSRV() const = 0;
-    
+	virtual FXRVisGeometryResults GetGeometryResult() const = 0;
+
+	virtual uint32 GetVertexStride() const = 0;
+    virtual bool IsResultValid()  = 0;
     
     // 判断是否需要更新几何体
     virtual bool NeedsUpdate() const { return bNeedsUpdate; }

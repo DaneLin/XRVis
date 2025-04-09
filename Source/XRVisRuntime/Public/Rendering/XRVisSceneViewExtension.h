@@ -2,9 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "SceneViewExtension.h"
+#include "XRVisGeometryGenerator.h"
 
-// forward declare
-class FXRVisGeometryGenerator;
 
 /**
  *
@@ -24,14 +23,11 @@ public:
 
 	// 几何体生成管理
 	void RegisterGeometryGenerator(FXRVisGeometryGenerator* InGeometryGenerator);
-	void UnregisterGeometryGenerator(FXRVisGeometryGenerator* InGeometryGenerator);
-
-	static FXRVisSceneViewExtension* Get();
+	void UnregisterGeometryGenerator();
 
 private:
 	// 几何体生成管理
-	TArray<FXRVisGeometryGenerator*> GeometryGenerators;
+	FXRVisGeometryGenerator* GeometryGenerators;
 	
-	static FXRVisSceneViewExtension* Instance;
 };
 
