@@ -1,46 +1,43 @@
-﻿#include "/Engine/Public/Platform.ush"
+﻿// XRVisGPUBoxShader.usf
+#include "/Engine/Public/Platform.ush"
 
-
+// 使用与C++一致的小驼峰命名
 uint rowsNum;
 uint colsNum;
 float widthx;
 float widthy;
 float spaceX;
 float spaceY;
-// height datas
-StructuredBuffer<float> Height : register(t0);
-
-RWStructuredBuffer<float3> OutputVertices : register(u0);
-RWStructuredBuffer<int> OutputIndices : register(u1);
-RWStructuredBuffer<float3> OutputNormals : register(u2);
-RWStructuredBuffer<float2> OutputUVs : register(u3);
-RWStructuredBuffer<float4> OutputVertexColors : register(u4);
+Buffer<float> heightBuffer;
+RWBuffer<float3> vertexBuffer;
+RWBuffer<uint> indexBuffer;
+RWBuffer<uint> drawIndirectArgsBuffer;
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
-void MainCS(uint3 DTid : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex )
+void MainCS(uint3 DTid : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex)
 {
     uint boxIndex = DTid.x;
     if (boxIndex >= rowsNum * colsNum) return;
 
-	// current row and col
+    // current row and col
     uint row = boxIndex / colsNum;
     uint col = boxIndex % colsNum;
-
 
     uint baseVertexIndex = boxIndex * 24;
     uint baseIndexIndex = boxIndex * 36;
     float3 currentPosition = float3(spaceX * col, spaceY * row, 0);
-    float height = Height[boxIndex];
+    
+    float boxHeight = heightBuffer[boxIndex];
 
     float3 positions[8] = {
         float3(0, widthx, 0) + currentPosition,
         float3(widthy, widthx, 0) + currentPosition,
         float3(widthy, 0, 0) + currentPosition,
         float3(0, 0, 0) + currentPosition,
-        float3(0, widthx, height) + currentPosition,
-        float3(widthy, widthx, height) + currentPosition,
-        float3(widthy, 0, height) + currentPosition,
-        float3(0, 0, height) + currentPosition
+        float3(0, widthx, boxHeight) + currentPosition,
+        float3(widthy, widthx, boxHeight) + currentPosition,
+        float3(widthy, 0, boxHeight) + currentPosition,
+        float3(0, 0, boxHeight) + currentPosition
     };
 
     float3 normals[6] = {
@@ -56,7 +53,7 @@ void MainCS(uint3 DTid : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex )
         // Front face
         0, 1, 5, 4,
         // Back face
-        2, 3, 7,  6,
+        2, 3, 7, 6,
         // Left face
         3, 0, 4, 7,
         // Right face
@@ -73,6 +70,7 @@ void MainCS(uint3 DTid : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex )
         float2(1, 0),
         float2(0, 0),
     };
+    
     // box for six faces
     for (uint i = 0; i < 6; i++)
     {
@@ -82,17 +80,31 @@ void MainCS(uint3 DTid : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex )
         // every face with 4 vertices
         for (uint j = 0; j < 4; j++)
         {
-            OutputVertices[vertexStart + j] = float3(positions[indices[i * 4 + j]]);
-            OutputNormals[vertexStart + j] = normals[i];
-            OutputUVs[vertexStart + j] = uvs[j];
-            OutputVertexColors[vertexStart + j] = float4(1.0, 1.0, 1.0, 1.0);
+            uint vertexIndex = vertexStart + j;
+            vertexBuffer[vertexStart + j] = float3(positions[indices[i * 4 + j]]);
         }
 
-        OutputIndices[indexStart + 0] = vertexStart + 0;
-        OutputIndices[indexStart + 1] = vertexStart + 1;
-        OutputIndices[indexStart + 2] = vertexStart + 2;
-        OutputIndices[indexStart + 3] = vertexStart + 0;
-        OutputIndices[indexStart + 4] = vertexStart + 2;
-        OutputIndices[indexStart + 5] = vertexStart + 3;
+        // 索引数据保持不变
+        indexBuffer[indexStart + 0] = vertexStart + 0;
+        indexBuffer[indexStart + 1] = vertexStart + 1;
+        indexBuffer[indexStart + 2] = vertexStart + 2;
+        indexBuffer[indexStart + 3] = vertexStart + 0;
+        indexBuffer[indexStart + 4] = vertexStart + 2;
+        indexBuffer[indexStart + 5] = vertexStart + 3;
+    }
+    
+    // 如果是第一个线程，设置DrawIndirect参数
+    if (boxIndex == 0)
+    {
+        // 总索引数
+        uint totalIndexCount = rowsNum * colsNum * 36;
+        
+        // DrawIndexedIndirect参数: 
+        // IndexCount, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation
+        drawIndirectArgsBuffer[0] = totalIndexCount; // 索引数量
+        drawIndirectArgsBuffer[1] = 1;               // 实例数量
+        drawIndirectArgsBuffer[2] = 0;               // 起始索引位置
+        drawIndirectArgsBuffer[3] = 0;               // 基础顶点位置
+        drawIndirectArgsBuffer[4] = 0;               // 起始实例位置
     }
 }

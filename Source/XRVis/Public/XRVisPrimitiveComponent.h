@@ -8,6 +8,7 @@
 #include "XRVisPrimitiveComponent.generated.h"
 
 class FPrimitiveSceneProxy;
+class FXRVisGeometryGenerator;
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class XRVIS_API UXRVisPrimitiveComponent : public UPrimitiveComponent
@@ -22,11 +23,13 @@ class XRVIS_API UXRVisPrimitiveComponent : public UPrimitiveComponent
 	virtual FBoxSphereBounds CalcBounds(const FTransform& LocalToWorld) const override;
 	//~ Begin USceneComponent Interface.
 
+	FXRVisGeometryGenerator* GeometryGenerator;
+	
 public:
 	// Sets default values for this component's properties
 	UXRVisPrimitiveComponent();
-	
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType,
@@ -44,6 +47,9 @@ public:
 	}
 
 	virtual void SetMaterial(int32 ElementIndex, UMaterialInterface* InMaterial) override;
+	
+	void SetGeometryGenerator(FXRVisGeometryGenerator* InGeometryGenerator);
+	FXRVisGeometryGenerator* GetGeometryGenerator() const;
 
 protected:
 	// Called when the game starts
@@ -58,4 +64,7 @@ protected:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bDrawIndirect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bGPUGenerate;
 };

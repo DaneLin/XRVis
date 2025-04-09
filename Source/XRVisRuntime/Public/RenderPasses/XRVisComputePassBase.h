@@ -11,46 +11,17 @@ namespace ComputePassBase
 }
 
 /**
- *
+ * 计算着色器基类, 用于管理计算着色器
  */
-struct XRVISRUNTIME_API FComputePassInputParams
-{
-	FRDGBuilder &GraphBuilder;
-	const FGlobalShaderMap *GlobalShaderMap;
-
-	FComputePassInputParams(FRDGBuilder &InGraphBuilder, const FGlobalShaderMap *InGlobalShaderMap)
-		: GraphBuilder(InGraphBuilder), GlobalShaderMap(InGlobalShaderMap)
-	{
-	}
-};
-
-/**
- *
- */
-struct XRVISRUNTIME_API FComputePassOutputParams
-{
-	FRDGTextureRef Texture;
-
-	FComputePassOutputParams(const FRDGTextureRef InTexture = nullptr)
-		: Texture(InTexture)
-	{
-	}
-};
-
-/**
- * Base class for compute passes
- */
-class XRVISRUNTIME_API FComputePassBase
+class XRVISRUNTIME_API FXRVisComputePassBase
 {
 public:
 	bool bNeverCull = false;
 	bool bAsyncCompute = false;
 
 public:
-	FComputePassBase() = default;
-	virtual ~FComputePassBase() = default;
-
-	virtual FComputePassOutputParams AddPass(FComputePassInputParams &InputParams) = 0;
+	FXRVisComputePassBase() = default;
+	virtual ~FXRVisComputePassBase() = default;
 
 protected:
 	template <typename TShaderClass>

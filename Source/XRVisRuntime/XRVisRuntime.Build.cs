@@ -14,7 +14,8 @@ public class XRVisRuntime : ModuleRules
                 "Renderer",
                 "RenderCore",
                 "ProceduralMeshComponent",
-                "Json"
+                "Json",
+                "Engine"
             }
         );
 
