@@ -50,7 +50,7 @@ protected:
 				ensure(GroupCount.X <= GRHIMaxDispatchThreadGroupsPerDimension.X);
 				ensure(GroupCount.Y <= GRHIMaxDispatchThreadGroupsPerDimension.Y);
 				ensure(GroupCount.Z <= GRHIMaxDispatchThreadGroupsPerDimension.Z);
-
+				
 				FComputeShaderUtils::Dispatch(RHICmdList, ComputeShader, ParametersMetadata, *Parameters, GroupCount);
 			});
 	}

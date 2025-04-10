@@ -9,6 +9,7 @@
 #include "MeshDrawShaderBindings.h"
 #include "MeshMaterialShader.h"
 #include "Rendering/XRVisBoxGeometryGenerator.h"
+#include "Rendering/XRVisBoxGeometryRenderer.h"
 #include "Rendering/XRVisGeometryGenerator.h"
 #include "Rendering/XRVisSceneViewExtension.h"
 
@@ -22,16 +23,8 @@ class FXRVisMeshIndexBuffer : public FIndexBuffer
 public:
 	void SetPooledIndexBuffer(const TRefCountPtr<FRDGPooledBuffer>& InPooledBuffer)
 	{
-		PooledIndexBuffer = InPooledBuffer;
+		IndexBufferRHI = InPooledBuffer.GetReference()->GetRHI();
 	}
-
-	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
-	{
-		IndexBufferRHI = PooledIndexBuffer->GetRHI();
-	}
-
-private:
-	TRefCountPtr<FRDGPooledBuffer> PooledIndexBuffer;
 };
 
 /**
@@ -71,44 +64,44 @@ public:
 	virtual void InitRHI(FRHICommandListBase& RHICmdList) override
 	{
 		check(Streams.Num() == 0);
-
+		
 		FVertexStream PositionVertexStream;
 		PositionVertexStream.VertexBuffer = VertexBuffer;
 		PositionVertexStream.Stride = sizeof(FVector3f);
 		PositionVertexStream.Offset = 0;
 		PositionVertexStream.VertexStreamUsage = EVertexStreamUsage::Default;
-
+		
 		FVertexStream TangentXVertexStream;
 		TangentXVertexStream.VertexBuffer = TangentVertexBuffer;
 		TangentXVertexStream.Stride = 8;
 		TangentXVertexStream.Offset = 0;
 		TangentXVertexStream.VertexStreamUsage = EVertexStreamUsage::Default;
-
+		
 		FVertexStream TangentZVertexStream;
 		TangentZVertexStream.VertexBuffer = TangentVertexBuffer;
 		TangentZVertexStream.Stride = 8;
 		TangentZVertexStream.Offset = 4;
 		TangentZVertexStream.VertexStreamUsage = EVertexStreamUsage::Default;
-
+		
 		FVertexStream ColorVertexStream;
 		ColorVertexStream.VertexBuffer = ColorVertexBuffer;
 		ColorVertexStream.Stride = sizeof(FColor);
 		ColorVertexStream.Offset = 0;
 		ColorVertexStream.VertexStreamUsage = EVertexStreamUsage::Default;
-	
+		
 		// same with VertexFactoryInput
 		const FVertexElement VertexPositionElement(Streams.Add(PositionVertexStream),0, VET_Float3, 0, PositionVertexStream.Stride, false);
 		const FVertexElement VertexTangentXElement(Streams.Add(TangentXVertexStream),0, VET_PackedNormal, 1, TangentXVertexStream.Stride, false);
 		const FVertexElement VertexTangentZElement(Streams.Add(TangentZVertexStream),0, VET_PackedNormal, 2, TangentZVertexStream.Stride, false);
 		const FVertexElement VertexColorElement(Streams.Add(ColorVertexStream), 0,VET_Color, 3, ColorVertexStream.Stride, false);
-	
+		
 		// Vertex declaration
 		FVertexDeclarationElementList Elements;
 		Elements.Add(VertexPositionElement);
 		Elements.Add(VertexTangentXElement);
 		Elements.Add(VertexTangentZElement);
 		Elements.Add(VertexColorElement);
-
+		
 		InitDeclaration(Elements);
 	}
 
@@ -119,9 +112,11 @@ public:
 
 	
 public:
-	FVertexBuffer* VertexBuffer = nullptr;
+	FVertexBuffer* VertexBuffer;
 	FVertexBuffer* TangentVertexBuffer = nullptr;
 	FColorVertexBuffer* ColorVertexBuffer = nullptr;
+
+	mutable FRHIShaderResourceView* PositionSRV = nullptr;
 };
 
 IMPLEMENT_VERTEX_FACTORY_TYPE(FXRVisPrimitiveVertexFactory,"/Engine/Private/LocalVertexFactory.ush",
@@ -257,7 +252,7 @@ public:
 
 		if(bGPUGenerate)
 		{
-			
+			VertexFactory.InitResource(GetImmediateCommandList_ForRenderCommand());
 		}
 		else 
 		{
@@ -286,17 +281,7 @@ public:
 	{
 		FRHICommandListBase& RHICmdList = FRHICommandListExecutor::GetImmediateCommandList();
 		
-		if (GeometryGenerator )
-		{
-			VertexFactory.InitResource(RHICmdList);
-
-			if(GeometryGenerator->IsResultValid())
-			{
-				VertexFactory.VertexBuffer->VertexBufferRHI = GeometryGenerator->GetGeometryResult().VertexPooledBuffer->GetRHI();
-				
-				GPUIndexBuffer.SetPooledIndexBuffer(GeometryGenerator->GetGeometryResult().IndexPooledBuffer);
-			}
-		}
+	
 		// TODO : remove this debug code
 	
 		TResourceArray<uint32> InitData;
@@ -311,10 +296,10 @@ public:
 
 	virtual void GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const override
 	{
-		QUICK_SCOPE_CYCLE_COUNTER(STAT_CustomSceneProxy_GetDynamicMeshElements);
+		QUICK_SCOPE_CYCLE_COUNTER(STAT_XRVisPrimitiveSceneProxy_GetDynamicMeshElements);
 
 		FMatrix EffectiveLocalToWorld = GetLocalToWorld();
-
+		
 		for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++)
 		{
 			if (VisibilityMap & (1 << ViewIndex))
@@ -407,7 +392,9 @@ private:
 	FStaticMeshVertexBuffers VertexBuffers;
 	FDynamicMeshIndexBuffer32 IndexBuffer;
 
-	FXRVisMeshIndexBuffer GPUIndexBuffer;
+	mutable FVertexBuffer GPUVertexBuffer;
+
+	mutable FXRVisMeshIndexBuffer GPUIndexBuffer;
 
 	bool bDrawIndirect;
 	bool bGPUGenerate;
@@ -415,7 +402,7 @@ private:
 	FRWBuffer DrawIndirectArgsBuffer;
 
 #if USING_CUSTOM_VERTEXFACTORY
-	FXRVisPrimitiveVertexFactory VertexFactory;
+	mutable FXRVisPrimitiveVertexFactory VertexFactory;
 #else
 	FLocalVertexFactory VertexFactory;
 #endif
@@ -454,20 +441,32 @@ UXRVisPrimitiveComponent::UXRVisPrimitiveComponent()
 		{
 			for (int y = 0; y < Params.ColumnCount; ++y)
 			{
-				Params.HeightValues[x * Params.RowCount + y]=(x * Params.RowCount + y);
+				Params.HeightValues[x * Params.ColumnCount + y]= 1;
 			}
 		}
 		static_cast<FXRVisBoxGeometryGenerator*>(GeometryGenerator)->SetParameters(Params);
+		
+		GeometryRenderer = new FXRVisBoxGeometryRenderer();
 		GeometryGenerator->MarkForUpdate();
 	}
 }
 
 UXRVisPrimitiveComponent::~UXRVisPrimitiveComponent()
 {
+	if(SceneViewExtension)
+	{
+		SceneViewExtension->UnregisterGeometryGenerator();
+		SceneViewExtension->UnregisterGeometryRenderer();
+	}
 	if(GeometryGenerator)
 	{
 		delete GeometryGenerator;
 	}
+	if(GeometryRenderer)
+	{
+		delete GeometryRenderer;
+	}
+	
 }
 
 void UXRVisPrimitiveComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -501,6 +500,7 @@ void UXRVisPrimitiveComponent::BeginPlay()
 
 	SceneViewExtension = FSceneViewExtensions::NewExtension<FXRVisSceneViewExtension>();
 	SceneViewExtension->RegisterGeometryGenerator(GeometryGenerator);
+	SceneViewExtension->RegisterGeometryRenderer(GeometryRenderer);
 }
 
 void UXRVisPrimitiveComponent::OnMaterialChanged()
@@ -517,6 +517,8 @@ void UXRVisPrimitiveComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	// ...
+	if(GeometryRenderer)
+		GeometryRenderer->SetModelMatrix(static_cast<FMatrix44f>(GetComponentTransform().ToMatrixWithScale()));
 }
 
 void UXRVisPrimitiveComponent::GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials,

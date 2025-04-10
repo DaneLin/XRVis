@@ -23,8 +23,10 @@ public:
      // 获取生成的几何体数据接口
     virtual FRHIShaderResourceView* GetVertexBufferSRV() const = 0;
     virtual FRHIShaderResourceView* GetIndexBufferSRV() const = 0;
-    virtual FRHIShaderResourceView* GetDrawIndirectArgsBufferSRV() const = 0;
 	virtual FXRVisGeometryResults GetGeometryResult() const = 0;
+
+	virtual uint32 GetVertexNum() const = 0;
+	virtual uint32 GetIndexNum() const = 0;
 
 	virtual uint32 GetVertexStride() const = 0;
     virtual bool IsResultValid()  = 0;

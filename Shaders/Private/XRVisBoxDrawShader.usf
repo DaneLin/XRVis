@@ -1,0 +1,29 @@
+﻿#include "/Engine/Public/Platform.ush"
+
+
+float4x4 ViewProj;
+float4x4 ModelMatrix;
+
+struct V2P
+{
+	float4 Position : SV_POSITION;
+};
+
+
+V2P VS(
+	in float3 Position : ATTRIBUTE0)
+{
+	V2P v2p;
+	// 应用视图投影矩阵变换
+	float4 tempPosition = mul(float4(Position, 1.f), ModelMatrix);
+	v2p.Position = mul(tempPosition, ViewProj);
+
+	return v2p;
+}
+
+float4 PS(in V2P v2p) : SV_Target0
+{
+	float4 color = float4(1.f, 1.f, 1.f, 1.f);
+
+	return color;
+}

@@ -9,9 +9,8 @@ float widthy;
 float spaceX;
 float spaceY;
 Buffer<float> heightBuffer;
-RWBuffer<float3> vertexBuffer;
+RWStructuredBuffer<float3> vertexBuffer;
 RWBuffer<uint> indexBuffer;
-RWBuffer<uint> drawIndirectArgsBuffer;
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
 void MainCS(uint3 DTid : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex)
@@ -91,20 +90,5 @@ void MainCS(uint3 DTid : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex)
         indexBuffer[indexStart + 3] = vertexStart + 0;
         indexBuffer[indexStart + 4] = vertexStart + 2;
         indexBuffer[indexStart + 5] = vertexStart + 3;
-    }
-    
-    // 如果是第一个线程，设置DrawIndirect参数
-    if (boxIndex == 0)
-    {
-        // 总索引数
-        uint totalIndexCount = rowsNum * colsNum * 36;
-        
-        // DrawIndexedIndirect参数: 
-        // IndexCount, InstanceCount, StartIndexLocation, BaseVertexLocation, StartInstanceLocation
-        drawIndirectArgsBuffer[0] = totalIndexCount; // 索引数量
-        drawIndirectArgsBuffer[1] = 1;               // 实例数量
-        drawIndirectArgsBuffer[2] = 0;               // 起始索引位置
-        drawIndirectArgsBuffer[3] = 0;               // 基础顶点位置
-        drawIndirectArgsBuffer[4] = 0;               // 起始实例位置
     }
 }

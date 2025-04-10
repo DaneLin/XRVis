@@ -34,9 +34,8 @@ public:
         SHADER_PARAMETER(float, spaceX)
         SHADER_PARAMETER(float, spaceY)
         SHADER_PARAMETER_RDG_BUFFER_SRV(Buffer<float>, heightBuffer)
-        SHADER_PARAMETER_RDG_BUFFER_UAV(RWBuffer<float3>, vertexBuffer)
+        SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<float3>, vertexBuffer)
         SHADER_PARAMETER_RDG_BUFFER_UAV(RWBuffer<uint>, indexBuffer)
-        SHADER_PARAMETER_RDG_BUFFER_UAV(RWBuffer<uint>, drawIndirectArgsBuffer)
     END_SHADER_PARAMETER_STRUCT()
 
     static bool ShouldCompilePermutation(const FGlobalShaderPermutationParameters& Parameters)
@@ -72,7 +71,9 @@ public:
 
     virtual FRHIShaderResourceView* GetVertexBufferSRV() const override { return Results.VertexBufferSRV; }
     virtual FRHIShaderResourceView* GetIndexBufferSRV() const override { return Results.IndexBufferSRV; }
-    virtual FRHIShaderResourceView* GetDrawIndirectArgsBufferSRV() const override { return Results.DrawIndirectArgsBufferSRV; }
+
+    virtual uint32 GetVertexNum() const override { return Params.ColumnCount * Params.RowCount * 24;}
+    virtual uint32 GetIndexNum() const override { return Params.ColumnCount * Params.RowCount * 36; }
 
     virtual FXRVisGeometryResults GetGeometryResult() const override {return Results;}
     

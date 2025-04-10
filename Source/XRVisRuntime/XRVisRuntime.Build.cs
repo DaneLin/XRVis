@@ -1,4 +1,6 @@
-﻿using UnrealBuildTool;
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
+
+using UnrealBuildTool;
 
 public class XRVisRuntime : ModuleRules
 {
@@ -30,6 +32,13 @@ public class XRVisRuntime : ModuleRules
                 "RHI",
                 "Projects", 
                 "ProceduralMeshComponent",
+            }
+        );
+
+        // 添加引擎渲染器模块的私有包含路径以便找到TranslucentRendering.h
+        PrivateIncludePaths.AddRange(
+            new string[] {
+                EngineDirectory + "/Source/Runtime/Renderer/Private",
             }
         );
     }

@@ -27,6 +27,8 @@ class XRVIS_API UXRVisPrimitiveComponent : public UPrimitiveComponent
 	TSharedPtr<FXRVisSceneViewExtension, ESPMode::ThreadSafe > SceneViewExtension;
 
 	FXRVisGeometryGenerator* GeometryGenerator;
+
+	FXRVisGeometryRenderer* GeometryRenderer;
 	
 public:
 	// Sets default values for this component's properties

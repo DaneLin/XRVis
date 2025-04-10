@@ -8,19 +8,19 @@
  */
 struct XRVISRUNTIME_API FXRVisGeometryResults
 {
+	
      // 持久资源 - 使用TRefCountPtr进行自动管理
     TRefCountPtr<FRDGPooledBuffer> VertexPooledBuffer;
     TRefCountPtr<FRDGPooledBuffer> IndexPooledBuffer;
-    TRefCountPtr<FRDGPooledBuffer> DrawIndirectArgsPooledBuffer;
-    
+    FRHIBuffer* CachedVertexBufferRHI = nullptr;
+    FRHIBuffer* CachedIndexBufferRHI = nullptr;
     // 资源视图
     TRefCountPtr<FRHIShaderResourceView> VertexBufferSRV;
     TRefCountPtr<FRHIShaderResourceView> IndexBufferSRV;
-    TRefCountPtr<FRHIShaderResourceView> DrawIndirectArgsBufferSRV;
 
 	bool IsValid() const
 	{
-		return VertexPooledBuffer.IsValid() && IndexPooledBuffer.IsValid() && DrawIndirectArgsPooledBuffer.IsValid();
+		return VertexPooledBuffer.IsValid() && IndexPooledBuffer.IsValid() ;
 	}
 };
 
@@ -33,8 +33,8 @@ struct XRVISRUNTIME_API FXRVisBoxGeometryParams
     int32 ColumnCount = 1000;
     float Width = 10.0f;
     float Height = 10.0f;
-    float SpaceX = 5.0f;
-    float SpaceY = 5.0f;
+    float SpaceX = 15.0f;
+    float SpaceY = 15.0f;
     TArray<float> HeightValues; // 每个Box的高度值
 };
 

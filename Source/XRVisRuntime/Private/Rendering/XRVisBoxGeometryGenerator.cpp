@@ -72,7 +72,6 @@ void FXRVisBoxGeometryGenerator::GenerateGeometry_RenderThread(FRDGBuilder& Grap
     PassParameters->heightBuffer = GraphBuilder.CreateSRV(HeightBufferRDG);
     PassParameters->vertexBuffer = GraphBuilder.CreateUAV(VertexBufferRDG);
     PassParameters->indexBuffer = GraphBuilder.CreateUAV(IndexBufferRDG);
-    PassParameters->drawIndirectArgsBuffer = GraphBuilder.CreateUAV(DrawIndirectArgsBufferRDG);
     
     
     // 计算线程组数量
@@ -96,15 +95,12 @@ void FXRVisBoxGeometryGenerator::GenerateGeometry_RenderThread(FRDGBuilder& Grap
 	// 转换为外部缓冲区
 	Results.VertexPooledBuffer = GraphBuilder.ConvertToExternalBuffer(VertexBufferRDG);
 	Results.IndexPooledBuffer = GraphBuilder.ConvertToExternalBuffer(IndexBufferRDG);
-	Results.DrawIndirectArgsPooledBuffer = GraphBuilder.ConvertToExternalBuffer(DrawIndirectArgsBufferRDG);
 
+	Results.CachedVertexBufferRHI = Results.VertexPooledBuffer->GetRHI();
+	Results.CachedIndexBufferRHI = Results.IndexPooledBuffer->GetRHI();
 	// // 注册外部缓冲区
 	// GraphBuilder.RegisterExternalBuffer(Results.VertexPooledBuffer);
 	// GraphBuilder.RegisterExternalBuffer(Results.IndexPooledBuffer);
 	// GraphBuilder.RegisterExternalBuffer(Results.DrawIndirectArgsPooledBuffer);
-
-	// 排队提取，但还不能使用
-	GraphBuilder.QueueBufferExtraction(VertexBufferRDG, &Results.VertexPooledBuffer);
-	GraphBuilder.QueueBufferExtraction(IndexBufferRDG, &Results.IndexPooledBuffer);
-	GraphBuilder.QueueBufferExtraction(DrawIndirectArgsBufferRDG, &Results.DrawIndirectArgsPooledBuffer);
+	MarkDataUsed();
 }
