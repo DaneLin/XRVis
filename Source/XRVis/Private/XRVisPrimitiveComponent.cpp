@@ -441,7 +441,7 @@ UXRVisPrimitiveComponent::UXRVisPrimitiveComponent()
 		{
 			for (int y = 0; y < Params.ColumnCount; ++y)
 			{
-				Params.HeightValues[x * Params.ColumnCount + y]= 1;
+				Params.HeightValues[x * Params.ColumnCount + y]= FMath::RandRange(10, 200);;
 			}
 		}
 		static_cast<FXRVisBoxGeometryGenerator*>(GeometryGenerator)->SetParameters(Params);
@@ -518,7 +518,13 @@ void UXRVisPrimitiveComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 
 	// ...
 	if(GeometryRenderer)
+	{
 		GeometryRenderer->SetModelMatrix(static_cast<FMatrix44f>(GetComponentTransform().ToMatrixWithScale()));
+	}
+	if(GeometryGenerator)
+	{
+		GeometryGenerator->SetKeepUpdate(bKeepUpdate);
+	}
 }
 
 void UXRVisPrimitiveComponent::GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials,

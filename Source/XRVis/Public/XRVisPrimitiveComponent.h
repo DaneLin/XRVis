@@ -68,9 +68,21 @@ protected:
 	TObjectPtr<UMaterialInterface> Material;
 
 public:
+	/**
+	 * 开启后使用Draw Indirect方式绘制(目前暂未实现)
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bDrawIndirect;
 
+	/**
+	 * 开启后使用GPU生成数据
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bGPUGenerate;
+
+	/**
+	 * 开启后，将会每帧更新数据，主要用于测试生成时间，在正常使用中不要启用
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (EditCondition = bGPUGenerate))
+	bool bKeepUpdate;
 };

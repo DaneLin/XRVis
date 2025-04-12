@@ -83,7 +83,6 @@ public:
     }
 
 private:
-
     // 当前参数
     FXRVisBoxGeometryParams Params;
 

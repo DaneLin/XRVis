@@ -1,7 +1,6 @@
 ﻿// XRVisGPUBoxShader.usf
 #include "/Engine/Public/Platform.ush"
 
-// 使用与C++一致的小驼峰命名
 uint rowsNum;
 uint colsNum;
 float widthx;

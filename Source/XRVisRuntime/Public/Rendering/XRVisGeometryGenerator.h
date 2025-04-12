@@ -40,7 +40,12 @@ public:
     // 标记数据需要更新
     virtual void MarkForUpdate() { bNeedsUpdate = true; }
 
+	// 标记是否每帧都更新，作为测试代码
+	virtual void SetKeepUpdate(bool bNewKeepUpdate) { bKeepUpdate = bNewKeepUpdate; }
+
 protected:
+
+	bool bKeepUpdate = false;
 
     bool bNeedsUpdate = true;
 };

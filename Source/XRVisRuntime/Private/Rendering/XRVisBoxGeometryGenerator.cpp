@@ -102,5 +102,8 @@ void FXRVisBoxGeometryGenerator::GenerateGeometry_RenderThread(FRDGBuilder& Grap
 	// GraphBuilder.RegisterExternalBuffer(Results.VertexPooledBuffer);
 	// GraphBuilder.RegisterExternalBuffer(Results.IndexPooledBuffer);
 	// GraphBuilder.RegisterExternalBuffer(Results.DrawIndirectArgsPooledBuffer);
-	MarkDataUsed();
+	if(!bKeepUpdate)
+	{
+		MarkDataUsed();
+	}
 }
