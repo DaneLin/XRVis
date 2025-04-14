@@ -29,7 +29,7 @@ struct XRVISRUNTIME_API FXRVisGeometryResults
  */
 struct XRVISRUNTIME_API FXRVisBoxGeometryParams
 {
-    int32 RowCount = 10000;
+    int32 RowCount = 1000;
     int32 ColumnCount = 1000;
     float Width = 10.0f;
     float Height = 10.0f;
