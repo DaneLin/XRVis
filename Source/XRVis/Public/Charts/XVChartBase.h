@@ -69,11 +69,12 @@ public:
 public:
 	// Sets default values for this actor's properties
 	AXVChartBase();
+	virtual ~AXVChartBase();
 	
 	virtual void SetValue(const FString& InValue);
 	virtual void SetStyle();
 	virtual void ConstructMesh(double Rate = 1);
-	virtual void PrepareMeshSections();
+	void PrepareMeshSections();
 	virtual void ClearSelectedSection(const int& SectionIndex);
 	virtual void GenerateAllMeshInfo();
 	virtual void UpdateSectionVerticesOfZ(const double& Scale);
@@ -195,4 +196,12 @@ protected:
     
 	UPROPERTY(EditAnywhere, Category="Chart Property | Axis")
 	TArray<FString> YAxisLabels;
+
+	/* GPU生成相关 */
+	UPROPERTY(EditAnywhere, Category="Chart Property | GPU")
+	bool bEnableGPU;
+	
+	TSharedPtr<FXRVisSceneViewExtension, ESPMode::ThreadSafe > SceneViewExtension;
+	FXRVisGeometryGenerator* GeometryGenerator;
+	FXRVisGeometryRenderer* GeometryRenderer;
 };

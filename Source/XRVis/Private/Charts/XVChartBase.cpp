@@ -1,4 +1,6 @@
 ﻿#include "Charts/XVChartBase.h"
+
+#include "SceneViewExtension.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 #include "Serialization/JsonReader.h"
@@ -7,6 +9,9 @@
 #include "Dom/JsonValue.h"
 #include "Charts/XVBarChart.h"
 #include "Charts/XVLineChart.h"
+#include "Rendering/XRVisBoxGeometryGenerator.h"
+#include "Rendering/XRVisBoxGeometryRenderer.h"
+#include "Rendering/XRVisSceneViewExtension.h"
 
 
 // Sets default values
@@ -34,6 +39,27 @@ AXVChartBase::AXVChartBase()
 	
 	// 默认设置
 	bAutoLoadData = false;
+	bEnableGPU = false;
+
+	// GPU
+	GeometryGenerator = new FXRVisBoxGeometryGenerator();
+	GeometryRenderer = new FXRVisBoxGeometryRenderer();
+
+	PrepareMeshSections();
+}
+
+AXVChartBase::~AXVChartBase()
+{
+	if (GeometryGenerator)
+	{
+		delete GeometryGenerator;
+		GeometryGenerator = nullptr;
+	}
+	if (GeometryRenderer)
+	{
+		delete GeometryRenderer;
+		GeometryRenderer = nullptr;
+	}
 }
 
 
@@ -124,12 +150,19 @@ void AXVChartBase::UpdateMeshSection(int SectionIndex, bool bSRGBConversion)
 void AXVChartBase::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	if (bEnableGPU)
+	{
+		SceneViewExtension = FSceneViewExtensions::NewExtension<FXRVisSceneViewExtension>();
+		SceneViewExtension->RegisterGeometryGenerator(GeometryGenerator);
+		SceneViewExtension->RegisterGeometryRenderer(GeometryRenderer);
+	}
 	// 如果启用了自动加载数据并且设置了有效的数据路径
 	if (bAutoLoadData && !DataFilePath.IsEmpty())
 	{
 		LoadDataFromFile(DataFilePath);
 	}
+	
 }
 
 void AXVChartBase::BackupVertices()
@@ -158,6 +191,11 @@ void AXVChartBase::Tick(float DeltaTime)
 	if (IsHidden())
 	{
 		CurrentBuildTime = 0.f;
+	}
+
+	if(bEnableGPU)
+	{
+		GeometryRenderer->SetModelMatrix(static_cast<FMatrix44f>(GetActorTransform().ToMatrixWithScale()));
 	}
 }
 
@@ -507,8 +545,8 @@ void AXVChartBase::SetValueFromNamedData(const TArray<TSharedPtr<FJsonObject>>& 
         AXVBarChart* BarChart = Cast<AXVBarChart>(this);
         if (BarChart)
         {
-            BarChart->x_Text = SortedXValues;
-            BarChart->y_Text = SortedYValues;
+            BarChart->XTextArrs = SortedXValues;
+            BarChart->YTextArrs = SortedYValues;
         }
     }
     else if (ClassName.Contains(TEXT("LineChart")))

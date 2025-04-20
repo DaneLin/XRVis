@@ -7,6 +7,8 @@
 #include "Components/TextRenderComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetTextLibrary.h"
+#include "Rendering/XRVisBoxGeometryGenerator.h"
+#include "Rendering/XRVisGeometryTypes.h"
 
 
 // Sets default values
@@ -58,11 +60,20 @@ void AXVBarChart::BeginPlay()
 		AXVChartAxis* ChartAxis = Cast<AXVChartAxis>(Actor);
 		if (ChartAxis)
 		{
-			ChartAxis->SetXAxisText(x_Text);
-			ChartAxis->SetYAxisText(y_Text);
-			ChartAxis->SetZAxisText(z_Text);
+			ChartAxis->SetXAxisText(XTextArrs);
+			ChartAxis->SetYAxisText(YTextArrs);
+			ChartAxis->SetZAxisText(ZTextArrs);
 			ChartAxis->SetAxisGridNum(XAxisLabels.Num(), YAxisLabels.Num(),5);
 		}
+	}
+
+	if (bAutoLoadData && bEnableGPU)
+	{
+		FXRVisBoxGeometryParams Params;
+		Params.RowCount = XAxisLabels.Num();
+		Params.ColumnCount = YAxisLabels.Num();
+		Params.HeightValues = HeightValues;
+		static_cast<FXRVisBoxGeometryGenerator*>(GeometryGenerator)->SetParameters(Params);
 	}
 }
 
@@ -70,6 +81,11 @@ void AXVBarChart::BeginPlay()
 void AXVBarChart::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if(bEnableGPU)
+	{
+		return;
+	}
 
 	if(bEnableEnterAnimation)
 	{
@@ -149,7 +165,7 @@ void AXVBarChart::SetValue(const FString& InValue)
 	if (InValue.IsEmpty())
 		return;
 	XYZs.Empty();
-
+	HeightValues.Empty();
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(InValue);
 
 	TArray<TSharedPtr<FJsonValue>> Value3DJsonValueArray;
@@ -165,7 +181,7 @@ void AXVBarChart::SetValue(const FString& InValue)
 			int Y = Values[0]->AsNumber();
 			int X = Values[1]->AsNumber();
 			float V = Values[2]->AsNumber();
-
+			HeightValues.Add(V);
 			MaxX = FMath::Max(MaxX, X);
 			MinX = FMath::Min(MinX, X);
 			MaxY = FMath::Max(MaxY, Y);
@@ -195,7 +211,11 @@ void AXVBarChart::SetValue(const FString& InValue)
 	SectionSelectStates.Init(false, TotalCountOfValue);
 	SectionsHeight.SetNum(TotalCountOfValue + 1);
 
-	GenerateAllMeshInfo();
+	// 只有不启用GPU生成的时候才生成CPU数据
+	if(!bEnableGPU)
+	{
+		GenerateAllMeshInfo();
+	}
 }
 
 void AXVBarChart::GenerateAllMeshInfo()

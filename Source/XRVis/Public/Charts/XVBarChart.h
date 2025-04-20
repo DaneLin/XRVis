@@ -47,11 +47,11 @@ class XRVIS_API AXVBarChart : public AXVChartBase
 public:
 
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Chart Property | Axis Text")
-	TArray<FString> x_Text;
+	TArray<FString> XTextArrs;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Chart Property | Axis Text")
-	TArray<FString> y_Text;
+	TArray<FString> YTextArrs;
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Chart Property | Axis Text")
-	TArray<FString> z_Text;
+	TArray<FString> ZTextArrs;
 	
 	UPROPERTY(EditAnywhere,  BlueprintReadWrite,Category = "Chart Property | Value")
 	FString InValues;
@@ -117,6 +117,8 @@ private:
 	int MaxX, MinX, MaxY,MinY;
 	float MaxZ, MinZ;
 	int RowCounts, ColCounts;
+
+	TArray<float> HeightValues;
 
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	TArray<FColor> Colors;
