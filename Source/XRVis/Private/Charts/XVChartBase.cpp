@@ -5,6 +5,8 @@
 #include "Serialization/JsonSerializer.h"
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
+#include "Charts/XVBarChart.h"
+#include "Charts/XVLineChart.h"
 
 
 // Sets default values
@@ -178,7 +180,24 @@ bool AXVChartBase::LoadDataFromFile(const FString& FilePath)
 	// 保存当前文件路径
 	DataFilePath = FilePath;
 	
-	// 根据文件后缀自动选择加载方法
+	// 读取文件内容
+    FString FileContent;
+    if (FFileHelper::LoadFileToString(FileContent, *FilePath))
+    {
+        // 判断文件类型
+        FString Extension = FPaths::GetExtension(FilePath);
+        
+        if (Extension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
+        {
+            // 首先尝试直接解析JSON
+            if (SetValueFromJson(FileContent))
+            {
+                return true;
+            }
+        }
+    }
+	
+	// 如果直接解析失败，使用之前的数据管理器方法
 	bool bSuccess = LoadDataByFileExtension(FilePath);
 	
 	if (bSuccess)
@@ -211,8 +230,18 @@ bool AXVChartBase::LoadDataFromString(const FString& Content, const FString& Fil
 		return false;
 	}
 	
+	// 如果是JSON，首先尝试直接解析
+    if (FileExtension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
+    {
+        if (SetValueFromJson(Content))
+        {
+            return true;
+        }
+    }
+	
 	bool bSuccess = false;
 	
+	// 如果直接解析失败，使用之前的数据管理器方法
 	// 根据文件扩展名选择合适的加载方法
 	if (FileExtension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
 	{
@@ -329,6 +358,235 @@ FString AXVChartBase::FormatDataByChartType()
 	// 其他未知类型
 	UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 未知图表类型 %s，无法格式化数据"), *ClassName);
 	return TEXT("");
+}
+
+bool AXVChartBase::SetValueFromJson(const FString& JsonString)
+{
+    if (JsonString.IsEmpty())
+        return false;
+        
+    // 尝试解析JSON
+    TSharedPtr<FJsonValue> JsonValue;
+    TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(JsonString);
+    if (!FJsonSerializer::Deserialize(JsonReader, JsonValue) || !JsonValue.IsValid())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 无法解析JSON数据"));
+        return false;
+    }
+    
+    // 检查是数组格式
+    if (JsonValue->Type == EJson::Array)
+    {
+        TArray<TSharedPtr<FJsonValue>> JsonArray = JsonValue->AsArray();
+        
+        if (JsonArray.Num() == 0)
+            return false;
+            
+        // 检查第一个元素以确定数据格式
+        TSharedPtr<FJsonValue> FirstElement = JsonArray[0];
+        
+        // 原始格式 [[x,y,z], ...]
+        if (FirstElement->Type == EJson::Array)
+        {
+            // 使用原始SetValue方法
+            SetValue(JsonString);
+            return true;
+        }
+        // 对象格式 [{"x": ..., "y": ..., "z": ...}, ...]
+        else if (FirstElement->Type == EJson::Object)
+        {
+            // 收集所有对象
+            TArray<TSharedPtr<FJsonObject>> NamedData;
+            for (const auto& Item : JsonArray)
+            {
+                if (Item->Type == EJson::Object)
+                {
+                    NamedData.Add(Item->AsObject());
+                }
+            }
+            
+            // 使用命名数据方法
+            if (NamedData.Num() > 0)
+            {
+                SetValueFromNamedData(NamedData);
+                return true;
+            }
+        }
+    }
+    
+    UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 不支持的JSON数据格式"));
+    return false;
+}
+
+void AXVChartBase::SetValueFromNamedData(const TArray<TSharedPtr<FJsonObject>>& NamedData)
+{
+    if (NamedData.IsEmpty())
+        return;
+
+    // 验证是否设置了必要的属性映射
+    if (PropertyMapping.XProperty.IsEmpty() || PropertyMapping.YProperty.IsEmpty() || PropertyMapping.ZProperty.IsEmpty())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 缺少必要的属性映射，请设置PropertyMapping中的XProperty、YProperty和ZProperty"));
+        return;
+    }
+        
+    // 收集所有唯一的X和Y值
+    TSet<FString> UniqueXValues;
+    TSet<FString> UniqueYValues;
+    
+    // 遍历所有数据项，提取X和Y值
+    for (const auto& DataItem : NamedData)
+    {
+        // 检查所需的字段是否存在
+        if (DataItem->HasField(PropertyMapping.XProperty) && 
+            DataItem->HasField(PropertyMapping.YProperty) && 
+            DataItem->HasField(PropertyMapping.ZProperty))
+        {
+            // 获取X值
+            FString XValue;
+            if (DataItem->TryGetStringField(PropertyMapping.XProperty, XValue))
+            {
+                UniqueXValues.Add(XValue);
+            }
+            else
+            {
+                double XNumeric = 0;
+                if (DataItem->TryGetNumberField(PropertyMapping.XProperty, XNumeric))
+                {
+                    XValue = FString::Printf(TEXT("%g"), XNumeric);
+                    UniqueXValues.Add(XValue);
+                }
+            }
+            
+            // 获取Y值
+            FString YValue;
+            if (DataItem->TryGetStringField(PropertyMapping.YProperty, YValue))
+            {
+                UniqueYValues.Add(YValue);
+            }
+            else
+            {
+                double YNumeric = 0;
+                if (DataItem->TryGetNumberField(PropertyMapping.YProperty, YNumeric))
+                {
+                    YValue = FString::Printf(TEXT("%g"), YNumeric);
+                    UniqueYValues.Add(YValue);
+                }
+            }
+        }
+    }
+    
+    // 转换为排序数组
+    TArray<FString> SortedXValues = UniqueXValues.Array();
+    TArray<FString> SortedYValues = UniqueYValues.Array();
+    SortedXValues.Sort();
+    SortedYValues.Sort();
+    
+    // 创建映射字典
+    TMap<FString, int32> XValueToIndex;
+    TMap<FString, int32> YValueToIndex;
+    
+    for (int32 i = 0; i < SortedXValues.Num(); i++)
+    {
+        XValueToIndex.Add(SortedXValues[i], i);
+    }
+    
+    for (int32 i = 0; i < SortedYValues.Num(); i++)
+    {
+        YValueToIndex.Add(SortedYValues[i], i);
+    }
+    
+    // 存储轴标签
+    XAxisLabels = SortedXValues;
+    YAxisLabels = SortedYValues;
+    
+    // 设置图表轴标签（根据图表类型）
+    FString ClassName = GetClass()->GetName();
+    if (ClassName.Contains(TEXT("BarChart")))
+    {
+        AXVBarChart* BarChart = Cast<AXVBarChart>(this);
+        if (BarChart)
+        {
+            BarChart->x_Text = SortedXValues;
+            BarChart->y_Text = SortedYValues;
+        }
+    }
+    else if (ClassName.Contains(TEXT("LineChart")))
+    {
+        AXVLineChart* LineChart = Cast<AXVLineChart>(this);
+        if (LineChart)
+        {
+            LineChart->XText = SortedXValues;
+            LineChart->YText = SortedYValues;
+        }
+    }
+    
+    // 将命名数据转换为图表所需的格式
+    TArray<TSharedPtr<FJsonValue>> ChartData;
+    
+    for (const auto& DataItem : NamedData)
+    {
+        if (DataItem->HasField(PropertyMapping.XProperty) && 
+            DataItem->HasField(PropertyMapping.YProperty) && 
+            DataItem->HasField(PropertyMapping.ZProperty))
+        {
+            // 获取X值和索引
+            FString XValue;
+            int32 XIndex = 0;
+            
+            if (DataItem->TryGetStringField(PropertyMapping.XProperty, XValue))
+            {
+                XIndex = XValueToIndex.FindRef(XValue);
+            }
+            else
+            {
+                double XNumeric = 0;
+                if (DataItem->TryGetNumberField(PropertyMapping.XProperty, XNumeric))
+                {
+                    XValue = FString::Printf(TEXT("%g"), XNumeric);
+                    XIndex = XValueToIndex.FindRef(XValue);
+                }
+            }
+            
+            // 获取Y值和索引
+            FString YValue;
+            int32 YIndex = 0;
+            
+            if (DataItem->TryGetStringField(PropertyMapping.YProperty, YValue))
+            {
+                YIndex = YValueToIndex.FindRef(YValue);
+            }
+            else
+            {
+                double YNumeric = 0;
+                if (DataItem->TryGetNumberField(PropertyMapping.YProperty, YNumeric))
+                {
+                    YValue = FString::Printf(TEXT("%g"), YNumeric);
+                    YIndex = YValueToIndex.FindRef(YValue);
+                }
+            }
+            
+            // 获取Z值
+            double ZValue = 0;
+            DataItem->TryGetNumberField(PropertyMapping.ZProperty, ZValue);
+            
+            // 创建图表数据项 [YIndex, XIndex, ZValue]
+            TArray<TSharedPtr<FJsonValue>> InnerArray;
+            InnerArray.Add(MakeShareable(new FJsonValueNumber(YIndex)));
+            InnerArray.Add(MakeShareable(new FJsonValueNumber(XIndex)));
+            InnerArray.Add(MakeShareable(new FJsonValueNumber(ZValue)));
+            
+            ChartData.Add(MakeShareable(new FJsonValueArray(InnerArray)));
+        }
+    }
+    
+    // 将转换后的数据序列化为JSON字符串
+    FString FormattedData;
+    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&FormattedData);
+    FJsonSerializer::Serialize(ChartData, Writer);
+    
+    // 使用原始SetValue方法处理
+    SetValue(FormattedData);
 }
 
 void AXVChartBase::GeneratePieSectionInfo(const FVector& CenterPosition, const size_t& SectionIndex,

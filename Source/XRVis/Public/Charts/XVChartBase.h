@@ -110,6 +110,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
 	UXVDataManager* GetDataManager() const { return ChartDataManager; }
 
+	// 从JSON字符串设置图表数据（自动识别格式）
+	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
+	virtual bool SetValueFromJson(const FString& JsonString);
+
+	// 从命名数据设置图表值（使用现有的PropertyMapping）
+	virtual void SetValueFromNamedData(const TArray<TSharedPtr<FJsonObject>>& NamedData);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -181,4 +188,11 @@ protected:
 	/* 图表数据管理器 */
 	UPROPERTY()
 	UXVDataManager* ChartDataManager;
+
+	// 存储轴标签
+	UPROPERTY(EditAnywhere, Category="Chart Property | Axis")
+	TArray<FString> XAxisLabels;
+    
+	UPROPERTY(EditAnywhere, Category="Chart Property | Axis")
+	TArray<FString> YAxisLabels;
 };
