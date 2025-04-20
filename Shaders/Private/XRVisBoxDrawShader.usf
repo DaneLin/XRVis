@@ -23,7 +23,7 @@ V2P VS(
 
 float4 PS(in V2P v2p) : SV_Target0
 {
-	float4 color = float4(v2p.Position * 0.001f);
+	float4 color = float4(v2p.Position.xyz * 0.001f,1.f);
 
 	return color;
 }

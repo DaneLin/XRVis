@@ -33,8 +33,8 @@ struct XRVISRUNTIME_API FXRVisBoxGeometryParams
     int32 ColumnCount = 1000;
     float Width = 10.0f;
     float Height = 10.0f;
-    float SpaceX = 15.0f;
-    float SpaceY = 15.0f;
+    float SpaceX = 13.0f;
+    float SpaceY = 13.0f;
     TArray<float> HeightValues; // 每个Box的高度值
 };
 

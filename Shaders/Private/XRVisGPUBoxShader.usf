@@ -23,7 +23,7 @@ void MainCS(uint3 DTid : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex)
 
     uint baseVertexIndex = boxIndex * 24;
     uint baseIndexIndex = boxIndex * 36;
-    float3 currentPosition = float3(spaceX * col, spaceY * row, 0);
+    float3 currentPosition = float3(spaceX * row, spaceY * col, 0);
     
     float boxHeight = heightBuffer[boxIndex];
 
