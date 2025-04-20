@@ -1,0 +1,502 @@
+[
+  {
+    "year": 2015,
+    "category": "\u4ea7\u54c1A",
+    "sales": 33
+  },
+  {
+    "year": 2015,
+    "category": "\u4ea7\u54c1B",
+    "sales": 77
+  },
+  {
+    "year": 2015,
+    "category": "\u4ea7\u54c1C",
+    "sales": 12
+  },
+  {
+    "year": 2015,
+    "category": "\u4ea7\u54c1D",
+    "sales": 74
+  },
+  {
+    "year": 2015,
+    "category": "\u4ea7\u54c1E",
+    "sales": 86
+  },
+  {
+    "year": 2015,
+    "category": "\u4ea7\u54c1F",
+    "sales": 62
+  },
+  {
+    "year": 2015,
+    "category": "\u4ea7\u54c1G",
+    "sales": 18
+  },
+  {
+    "year": 2015,
+    "category": "\u4ea7\u54c1H",
+    "sales": 10
+  },
+  {
+    "year": 2015,
+    "category": "\u4ea7\u54c1I",
+    "sales": 62
+  },
+  {
+    "year": 2015,
+    "category": "\u4ea7\u54c1J",
+    "sales": 68
+  },
+  {
+    "year": 2016,
+    "category": "\u4ea7\u54c1A",
+    "sales": 46
+  },
+  {
+    "year": 2016,
+    "category": "\u4ea7\u54c1B",
+    "sales": 20
+  },
+  {
+    "year": 2016,
+    "category": "\u4ea7\u54c1C",
+    "sales": 42
+  },
+  {
+    "year": 2016,
+    "category": "\u4ea7\u54c1D",
+    "sales": 44
+  },
+  {
+    "year": 2016,
+    "category": "\u4ea7\u54c1E",
+    "sales": 74
+  },
+  {
+    "year": 2016,
+    "category": "\u4ea7\u54c1F",
+    "sales": 15
+  },
+  {
+    "year": 2016,
+    "category": "\u4ea7\u54c1G",
+    "sales": 92
+  },
+  {
+    "year": 2016,
+    "category": "\u4ea7\u54c1H",
+    "sales": 59
+  },
+  {
+    "year": 2016,
+    "category": "\u4ea7\u54c1I",
+    "sales": 72
+  },
+  {
+    "year": 2016,
+    "category": "\u4ea7\u54c1J",
+    "sales": 87
+  },
+  {
+    "year": 2017,
+    "category": "\u4ea7\u54c1A",
+    "sales": 75
+  },
+  {
+    "year": 2017,
+    "category": "\u4ea7\u54c1B",
+    "sales": 89
+  },
+  {
+    "year": 2017,
+    "category": "\u4ea7\u54c1C",
+    "sales": 80
+  },
+  {
+    "year": 2017,
+    "category": "\u4ea7\u54c1D",
+    "sales": 43
+  },
+  {
+    "year": 2017,
+    "category": "\u4ea7\u54c1E",
+    "sales": 34
+  },
+  {
+    "year": 2017,
+    "category": "\u4ea7\u54c1F",
+    "sales": 29
+  },
+  {
+    "year": 2017,
+    "category": "\u4ea7\u54c1G",
+    "sales": 18
+  },
+  {
+    "year": 2017,
+    "category": "\u4ea7\u54c1H",
+    "sales": 98
+  },
+  {
+    "year": 2017,
+    "category": "\u4ea7\u54c1I",
+    "sales": 12
+  },
+  {
+    "year": 2017,
+    "category": "\u4ea7\u54c1J",
+    "sales": 12
+  },
+  {
+    "year": 2018,
+    "category": "\u4ea7\u54c1A",
+    "sales": 68
+  },
+  {
+    "year": 2018,
+    "category": "\u4ea7\u54c1B",
+    "sales": 71
+  },
+  {
+    "year": 2018,
+    "category": "\u4ea7\u54c1C",
+    "sales": 14
+  },
+  {
+    "year": 2018,
+    "category": "\u4ea7\u54c1D",
+    "sales": 34
+  },
+  {
+    "year": 2018,
+    "category": "\u4ea7\u54c1E",
+    "sales": 64
+  },
+  {
+    "year": 2018,
+    "category": "\u4ea7\u54c1F",
+    "sales": 94
+  },
+  {
+    "year": 2018,
+    "category": "\u4ea7\u54c1G",
+    "sales": 99
+  },
+  {
+    "year": 2018,
+    "category": "\u4ea7\u54c1H",
+    "sales": 12
+  },
+  {
+    "year": 2018,
+    "category": "\u4ea7\u54c1I",
+    "sales": 74
+  },
+  {
+    "year": 2018,
+    "category": "\u4ea7\u54c1J",
+    "sales": 20
+  },
+  {
+    "year": 2019,
+    "category": "\u4ea7\u54c1A",
+    "sales": 97
+  },
+  {
+    "year": 2019,
+    "category": "\u4ea7\u54c1B",
+    "sales": 94
+  },
+  {
+    "year": 2019,
+    "category": "\u4ea7\u54c1C",
+    "sales": 12
+  },
+  {
+    "year": 2019,
+    "category": "\u4ea7\u54c1D",
+    "sales": 90
+  },
+  {
+    "year": 2019,
+    "category": "\u4ea7\u54c1E",
+    "sales": 25
+  },
+  {
+    "year": 2019,
+    "category": "\u4ea7\u54c1F",
+    "sales": 60
+  },
+  {
+    "year": 2019,
+    "category": "\u4ea7\u54c1G",
+    "sales": 49
+  },
+  {
+    "year": 2019,
+    "category": "\u4ea7\u54c1H",
+    "sales": 75
+  },
+  {
+    "year": 2019,
+    "category": "\u4ea7\u54c1I",
+    "sales": 15
+  },
+  {
+    "year": 2019,
+    "category": "\u4ea7\u54c1J",
+    "sales": 52
+  },
+  {
+    "year": 2020,
+    "category": "\u4ea7\u54c1A",
+    "sales": 30
+  },
+  {
+    "year": 2020,
+    "category": "\u4ea7\u54c1B",
+    "sales": 69
+  },
+  {
+    "year": 2020,
+    "category": "\u4ea7\u54c1C",
+    "sales": 10
+  },
+  {
+    "year": 2020,
+    "category": "\u4ea7\u54c1D",
+    "sales": 53
+  },
+  {
+    "year": 2020,
+    "category": "\u4ea7\u54c1E",
+    "sales": 78
+  },
+  {
+    "year": 2020,
+    "category": "\u4ea7\u54c1F",
+    "sales": 13
+  },
+  {
+    "year": 2020,
+    "category": "\u4ea7\u54c1G",
+    "sales": 16
+  },
+  {
+    "year": 2020,
+    "category": "\u4ea7\u54c1H",
+    "sales": 94
+  },
+  {
+    "year": 2020,
+    "category": "\u4ea7\u54c1I",
+    "sales": 11
+  },
+  {
+    "year": 2020,
+    "category": "\u4ea7\u54c1J",
+    "sales": 75
+  },
+  {
+    "year": 2021,
+    "category": "\u4ea7\u54c1A",
+    "sales": 15
+  },
+  {
+    "year": 2021,
+    "category": "\u4ea7\u54c1B",
+    "sales": 52
+  },
+  {
+    "year": 2021,
+    "category": "\u4ea7\u54c1C",
+    "sales": 78
+  },
+  {
+    "year": 2021,
+    "category": "\u4ea7\u54c1D",
+    "sales": 53
+  },
+  {
+    "year": 2021,
+    "category": "\u4ea7\u54c1E",
+    "sales": 27
+  },
+  {
+    "year": 2021,
+    "category": "\u4ea7\u54c1F",
+    "sales": 87
+  },
+  {
+    "year": 2021,
+    "category": "\u4ea7\u54c1G",
+    "sales": 95
+  },
+  {
+    "year": 2021,
+    "category": "\u4ea7\u54c1H",
+    "sales": 26
+  },
+  {
+    "year": 2021,
+    "category": "\u4ea7\u54c1I",
+    "sales": 69
+  },
+  {
+    "year": 2021,
+    "category": "\u4ea7\u54c1J",
+    "sales": 38
+  },
+  {
+    "year": 2022,
+    "category": "\u4ea7\u54c1A",
+    "sales": 41
+  },
+  {
+    "year": 2022,
+    "category": "\u4ea7\u54c1B",
+    "sales": 15
+  },
+  {
+    "year": 2022,
+    "category": "\u4ea7\u54c1C",
+    "sales": 81
+  },
+  {
+    "year": 2022,
+    "category": "\u4ea7\u54c1D",
+    "sales": 68
+  },
+  {
+    "year": 2022,
+    "category": "\u4ea7\u54c1E",
+    "sales": 95
+  },
+  {
+    "year": 2022,
+    "category": "\u4ea7\u54c1F",
+    "sales": 36
+  },
+  {
+    "year": 2022,
+    "category": "\u4ea7\u54c1G",
+    "sales": 81
+  },
+  {
+    "year": 2022,
+    "category": "\u4ea7\u54c1H",
+    "sales": 20
+  },
+  {
+    "year": 2022,
+    "category": "\u4ea7\u54c1I",
+    "sales": 52
+  },
+  {
+    "year": 2022,
+    "category": "\u4ea7\u54c1J",
+    "sales": 72
+  },
+  {
+    "year": 2023,
+    "category": "\u4ea7\u54c1A",
+    "sales": 44
+  },
+  {
+    "year": 2023,
+    "category": "\u4ea7\u54c1B",
+    "sales": 54
+  },
+  {
+    "year": 2023,
+    "category": "\u4ea7\u54c1C",
+    "sales": 49
+  },
+  {
+    "year": 2023,
+    "category": "\u4ea7\u54c1D",
+    "sales": 54
+  },
+  {
+    "year": 2023,
+    "category": "\u4ea7\u54c1E",
+    "sales": 33
+  },
+  {
+    "year": 2023,
+    "category": "\u4ea7\u54c1F",
+    "sales": 67
+  },
+  {
+    "year": 2023,
+    "category": "\u4ea7\u54c1G",
+    "sales": 23
+  },
+  {
+    "year": 2023,
+    "category": "\u4ea7\u54c1H",
+    "sales": 84
+  },
+  {
+    "year": 2023,
+    "category": "\u4ea7\u54c1I",
+    "sales": 38
+  },
+  {
+    "year": 2023,
+    "category": "\u4ea7\u54c1J",
+    "sales": 22
+  },
+  {
+    "year": 2024,
+    "category": "\u4ea7\u54c1A",
+    "sales": 82
+  },
+  {
+    "year": 2024,
+    "category": "\u4ea7\u54c1B",
+    "sales": 22
+  },
+  {
+    "year": 2024,
+    "category": "\u4ea7\u54c1C",
+    "sales": 13
+  },
+  {
+    "year": 2024,
+    "category": "\u4ea7\u54c1D",
+    "sales": 64
+  },
+  {
+    "year": 2024,
+    "category": "\u4ea7\u54c1E",
+    "sales": 84
+  },
+  {
+    "year": 2024,
+    "category": "\u4ea7\u54c1F",
+    "sales": 88
+  },
+  {
+    "year": 2024,
+    "category": "\u4ea7\u54c1G",
+    "sales": 69
+  },
+  {
+    "year": 2024,
+    "category": "\u4ea7\u54c1H",
+    "sales": 77
+  },
+  {
+    "year": 2024,
+    "category": "\u4ea7\u54c1I",
+    "sales": 100
+  },
+  {
+    "year": 2024,
+    "category": "\u4ea7\u54c1J",
+    "sales": 95
+  }
+]

@@ -1,0 +1,502 @@
+[
+  {
+    "region": "\u5317\u90e8",
+    "product": "\u624b\u673a",
+    "sales": 79
+  },
+  {
+    "region": "\u5317\u90e8",
+    "product": "\u7535\u8111",
+    "sales": 77
+  },
+  {
+    "region": "\u5317\u90e8",
+    "product": "\u5e73\u677f",
+    "sales": 58
+  },
+  {
+    "region": "\u5317\u90e8",
+    "product": "\u8033\u673a",
+    "sales": 56
+  },
+  {
+    "region": "\u5317\u90e8",
+    "product": "\u624b\u8868",
+    "sales": 41
+  },
+  {
+    "region": "\u5317\u90e8",
+    "product": "\u76f8\u673a",
+    "sales": 29
+  },
+  {
+    "region": "\u5317\u90e8",
+    "product": "\u6e38\u620f\u673a",
+    "sales": 23
+  },
+  {
+    "region": "\u5317\u90e8",
+    "product": "\u97f3\u7bb1",
+    "sales": 24
+  },
+  {
+    "region": "\u5317\u90e8",
+    "product": "\u8def\u7531\u5668",
+    "sales": 10
+  },
+  {
+    "region": "\u5317\u90e8",
+    "product": "\u7535\u89c6",
+    "sales": 12
+  },
+  {
+    "region": "\u5357\u90e8",
+    "product": "\u624b\u673a",
+    "sales": 71
+  },
+  {
+    "region": "\u5357\u90e8",
+    "product": "\u7535\u8111",
+    "sales": 74
+  },
+  {
+    "region": "\u5357\u90e8",
+    "product": "\u5e73\u677f",
+    "sales": 64
+  },
+  {
+    "region": "\u5357\u90e8",
+    "product": "\u8033\u673a",
+    "sales": 73
+  },
+  {
+    "region": "\u5357\u90e8",
+    "product": "\u624b\u8868",
+    "sales": 57
+  },
+  {
+    "region": "\u5357\u90e8",
+    "product": "\u76f8\u673a",
+    "sales": 54
+  },
+  {
+    "region": "\u5357\u90e8",
+    "product": "\u6e38\u620f\u673a",
+    "sales": 45
+  },
+  {
+    "region": "\u5357\u90e8",
+    "product": "\u97f3\u7bb1",
+    "sales": 22
+  },
+  {
+    "region": "\u5357\u90e8",
+    "product": "\u8def\u7531\u5668",
+    "sales": 19
+  },
+  {
+    "region": "\u5357\u90e8",
+    "product": "\u7535\u89c6",
+    "sales": 26
+  },
+  {
+    "region": "\u4e1c\u90e8",
+    "product": "\u624b\u673a",
+    "sales": 88
+  },
+  {
+    "region": "\u4e1c\u90e8",
+    "product": "\u7535\u8111",
+    "sales": 89
+  },
+  {
+    "region": "\u4e1c\u90e8",
+    "product": "\u5e73\u677f",
+    "sales": 81
+  },
+  {
+    "region": "\u4e1c\u90e8",
+    "product": "\u8033\u673a",
+    "sales": 77
+  },
+  {
+    "region": "\u4e1c\u90e8",
+    "product": "\u624b\u8868",
+    "sales": 55
+  },
+  {
+    "region": "\u4e1c\u90e8",
+    "product": "\u76f8\u673a",
+    "sales": 48
+  },
+  {
+    "region": "\u4e1c\u90e8",
+    "product": "\u6e38\u620f\u673a",
+    "sales": 36
+  },
+  {
+    "region": "\u4e1c\u90e8",
+    "product": "\u97f3\u7bb1",
+    "sales": 46
+  },
+  {
+    "region": "\u4e1c\u90e8",
+    "product": "\u8def\u7531\u5668",
+    "sales": 31
+  },
+  {
+    "region": "\u4e1c\u90e8",
+    "product": "\u7535\u89c6",
+    "sales": 35
+  },
+  {
+    "region": "\u897f\u90e8",
+    "product": "\u624b\u673a",
+    "sales": 98
+  },
+  {
+    "region": "\u897f\u90e8",
+    "product": "\u7535\u8111",
+    "sales": 95
+  },
+  {
+    "region": "\u897f\u90e8",
+    "product": "\u5e73\u677f",
+    "sales": 82
+  },
+  {
+    "region": "\u897f\u90e8",
+    "product": "\u8033\u673a",
+    "sales": 85
+  },
+  {
+    "region": "\u897f\u90e8",
+    "product": "\u624b\u8868",
+    "sales": 75
+  },
+  {
+    "region": "\u897f\u90e8",
+    "product": "\u76f8\u673a",
+    "sales": 52
+  },
+  {
+    "region": "\u897f\u90e8",
+    "product": "\u6e38\u620f\u673a",
+    "sales": 60
+  },
+  {
+    "region": "\u897f\u90e8",
+    "product": "\u97f3\u7bb1",
+    "sales": 50
+  },
+  {
+    "region": "\u897f\u90e8",
+    "product": "\u8def\u7531\u5668",
+    "sales": 36
+  },
+  {
+    "region": "\u897f\u90e8",
+    "product": "\u7535\u89c6",
+    "sales": 40
+  },
+  {
+    "region": "\u4e2d\u90e8",
+    "product": "\u624b\u673a",
+    "sales": 100
+  },
+  {
+    "region": "\u4e2d\u90e8",
+    "product": "\u7535\u8111",
+    "sales": 100
+  },
+  {
+    "region": "\u4e2d\u90e8",
+    "product": "\u5e73\u677f",
+    "sales": 90
+  },
+  {
+    "region": "\u4e2d\u90e8",
+    "product": "\u8033\u673a",
+    "sales": 92
+  },
+  {
+    "region": "\u4e2d\u90e8",
+    "product": "\u624b\u8868",
+    "sales": 71
+  },
+  {
+    "region": "\u4e2d\u90e8",
+    "product": "\u76f8\u673a",
+    "sales": 71
+  },
+  {
+    "region": "\u4e2d\u90e8",
+    "product": "\u6e38\u620f\u673a",
+    "sales": 46
+  },
+  {
+    "region": "\u4e2d\u90e8",
+    "product": "\u97f3\u7bb1",
+    "sales": 50
+  },
+  {
+    "region": "\u4e2d\u90e8",
+    "product": "\u8def\u7531\u5668",
+    "sales": 44
+  },
+  {
+    "region": "\u4e2d\u90e8",
+    "product": "\u7535\u89c6",
+    "sales": 29
+  },
+  {
+    "region": "\u533a\u57df1",
+    "product": "\u624b\u673a",
+    "sales": 95
+  },
+  {
+    "region": "\u533a\u57df1",
+    "product": "\u7535\u8111",
+    "sales": 99
+  },
+  {
+    "region": "\u533a\u57df1",
+    "product": "\u5e73\u677f",
+    "sales": 84
+  },
+  {
+    "region": "\u533a\u57df1",
+    "product": "\u8033\u673a",
+    "sales": 89
+  },
+  {
+    "region": "\u533a\u57df1",
+    "product": "\u624b\u8868",
+    "sales": 85
+  },
+  {
+    "region": "\u533a\u57df1",
+    "product": "\u76f8\u673a",
+    "sales": 65
+  },
+  {
+    "region": "\u533a\u57df1",
+    "product": "\u6e38\u620f\u673a",
+    "sales": 49
+  },
+  {
+    "region": "\u533a\u57df1",
+    "product": "\u97f3\u7bb1",
+    "sales": 58
+  },
+  {
+    "region": "\u533a\u57df1",
+    "product": "\u8def\u7531\u5668",
+    "sales": 36
+  },
+  {
+    "region": "\u533a\u57df1",
+    "product": "\u7535\u89c6",
+    "sales": 31
+  },
+  {
+    "region": "\u533a\u57df2",
+    "product": "\u624b\u673a",
+    "sales": 96
+  },
+  {
+    "region": "\u533a\u57df2",
+    "product": "\u7535\u8111",
+    "sales": 90
+  },
+  {
+    "region": "\u533a\u57df2",
+    "product": "\u5e73\u677f",
+    "sales": 90
+  },
+  {
+    "region": "\u533a\u57df2",
+    "product": "\u8033\u673a",
+    "sales": 88
+  },
+  {
+    "region": "\u533a\u57df2",
+    "product": "\u624b\u8868",
+    "sales": 82
+  },
+  {
+    "region": "\u533a\u57df2",
+    "product": "\u76f8\u673a",
+    "sales": 59
+  },
+  {
+    "region": "\u533a\u57df2",
+    "product": "\u6e38\u620f\u673a",
+    "sales": 45
+  },
+  {
+    "region": "\u533a\u57df2",
+    "product": "\u97f3\u7bb1",
+    "sales": 40
+  },
+  {
+    "region": "\u533a\u57df2",
+    "product": "\u8def\u7531\u5668",
+    "sales": 33
+  },
+  {
+    "region": "\u533a\u57df2",
+    "product": "\u7535\u89c6",
+    "sales": 44
+  },
+  {
+    "region": "\u533a\u57df3",
+    "product": "\u624b\u673a",
+    "sales": 86
+  },
+  {
+    "region": "\u533a\u57df3",
+    "product": "\u7535\u8111",
+    "sales": 93
+  },
+  {
+    "region": "\u533a\u57df3",
+    "product": "\u5e73\u677f",
+    "sales": 79
+  },
+  {
+    "region": "\u533a\u57df3",
+    "product": "\u8033\u673a",
+    "sales": 71
+  },
+  {
+    "region": "\u533a\u57df3",
+    "product": "\u624b\u8868",
+    "sales": 77
+  },
+  {
+    "region": "\u533a\u57df3",
+    "product": "\u76f8\u673a",
+    "sales": 61
+  },
+  {
+    "region": "\u533a\u57df3",
+    "product": "\u6e38\u620f\u673a",
+    "sales": 57
+  },
+  {
+    "region": "\u533a\u57df3",
+    "product": "\u97f3\u7bb1",
+    "sales": 32
+  },
+  {
+    "region": "\u533a\u57df3",
+    "product": "\u8def\u7531\u5668",
+    "sales": 25
+  },
+  {
+    "region": "\u533a\u57df3",
+    "product": "\u7535\u89c6",
+    "sales": 33
+  },
+  {
+    "region": "\u533a\u57df4",
+    "product": "\u624b\u673a",
+    "sales": 74
+  },
+  {
+    "region": "\u533a\u57df4",
+    "product": "\u7535\u8111",
+    "sales": 87
+  },
+  {
+    "region": "\u533a\u57df4",
+    "product": "\u5e73\u677f",
+    "sales": 71
+  },
+  {
+    "region": "\u533a\u57df4",
+    "product": "\u8033\u673a",
+    "sales": 60
+  },
+  {
+    "region": "\u533a\u57df4",
+    "product": "\u624b\u8868",
+    "sales": 58
+  },
+  {
+    "region": "\u533a\u57df4",
+    "product": "\u76f8\u673a",
+    "sales": 44
+  },
+  {
+    "region": "\u533a\u57df4",
+    "product": "\u6e38\u620f\u673a",
+    "sales": 37
+  },
+  {
+    "region": "\u533a\u57df4",
+    "product": "\u97f3\u7bb1",
+    "sales": 27
+  },
+  {
+    "region": "\u533a\u57df4",
+    "product": "\u8def\u7531\u5668",
+    "sales": 22
+  },
+  {
+    "region": "\u533a\u57df4",
+    "product": "\u7535\u89c6",
+    "sales": 22
+  },
+  {
+    "region": "\u533a\u57df5",
+    "product": "\u624b\u673a",
+    "sales": 84
+  },
+  {
+    "region": "\u533a\u57df5",
+    "product": "\u7535\u8111",
+    "sales": 78
+  },
+  {
+    "region": "\u533a\u57df5",
+    "product": "\u5e73\u677f",
+    "sales": 61
+  },
+  {
+    "region": "\u533a\u57df5",
+    "product": "\u8033\u673a",
+    "sales": 54
+  },
+  {
+    "region": "\u533a\u57df5",
+    "product": "\u624b\u8868",
+    "sales": 56
+  },
+  {
+    "region": "\u533a\u57df5",
+    "product": "\u76f8\u673a",
+    "sales": 38
+  },
+  {
+    "region": "\u533a\u57df5",
+    "product": "\u6e38\u620f\u673a",
+    "sales": 31
+  },
+  {
+    "region": "\u533a\u57df5",
+    "product": "\u97f3\u7bb1",
+    "sales": 28
+  },
+  {
+    "region": "\u533a\u57df5",
+    "product": "\u8def\u7531\u5668",
+    "sales": 20
+  },
+  {
+    "region": "\u533a\u57df5",
+    "product": "\u7535\u89c6",
+    "sales": 13
+  }
+]

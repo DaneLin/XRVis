@@ -4,8 +4,37 @@
 #include "GameFramework/Actor.h"
 #include "ProceduralMeshComponent.h"
 #include "XVChartUtils.h"
+#include "DataProcessing/XVDataManager.h"
 #include "XVChartBase.generated.h"
 
+/**
+ * 图表属性映射
+ */
+USTRUCT(BlueprintType)
+struct FXVChartPropertyMapping
+{
+	GENERATED_BODY()
+
+	/** X轴属性名称 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping")
+	FString XProperty;
+
+	/** Y轴属性名称 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping")
+	FString YProperty;
+
+	/** Z轴属性名称（值） */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping")
+	FString ZProperty;
+
+	/** 分类属性名称（饼图） */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping")
+	FString CategoryProperty;
+
+	/** 数值属性名称（饼图） */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping")
+	FString ValueProperty;
+};
 
 UCLASS()
 class XRVIS_API AXVChartBase : public AActor
@@ -24,6 +53,18 @@ public:
 	/* 是否开启入场动画 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | Animation")
 	bool bEnableEnterAnimation;
+
+	/* 数据文件路径 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Data")
+	FString DataFilePath;
+
+	/* 属性映射 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Data")
+	FXVChartPropertyMapping PropertyMapping;
+
+	/* 是否自动加载数据 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Data")
+	bool bAutoLoadData;
 
 public:
 	// Sets default values for this actor's properties
@@ -56,11 +97,30 @@ public:
 	virtual void NotifyActorEndCursorOver() override;
 	virtual void UpdateOnMouseEnterOrLeft();
 
+	// 数据加载相关函数
+	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
+	virtual bool LoadDataFromFile(const FString& FilePath);
+	
+	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
+	virtual bool LoadDataFromString(const FString& Content, const FString& FileExtension);
+	
+	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
+	virtual FString GetFormattedDataForChart();
+	
+	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
+	UXVDataManager* GetDataManager() const { return ChartDataManager; }
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void BackupVertices();
+	
+	/* 根据文件扩展名自动选择合适的加载方法 */
+	virtual bool LoadDataByFileExtension(const FString& FilePath);
+	
+	/* 根据图表类型和属性映射转换数据为合适的格式 */
+	virtual FString FormatDataByChartType();
 
 public:
 	// Called every frame
@@ -118,4 +178,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	bool bAnimationFinished;
 
+	/* 图表数据管理器 */
+	UPROPERTY()
+	UXVDataManager* ChartDataManager;
 };

@@ -1,4 +1,10 @@
 ﻿#include "Charts/XVChartBase.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
+#include "Serialization/JsonReader.h"
+#include "Serialization/JsonSerializer.h"
+#include "Dom/JsonObject.h"
+#include "Dom/JsonValue.h"
 
 
 // Sets default values
@@ -20,6 +26,12 @@ AXVChartBase::AXVChartBase()
 	bAnimationFinished = false;
 	CurrentBuildTime = 0.f;
 	BuildTime = 1.5f;
+	
+	// 初始化数据管理器
+	ChartDataManager = CreateDefaultSubobject<UXVDataManager>(TEXT("ChartDataManager"));
+	
+	// 默认设置
+	bAutoLoadData = false;
 }
 
 
@@ -110,6 +122,12 @@ void AXVChartBase::UpdateMeshSection(int SectionIndex, bool bSRGBConversion)
 void AXVChartBase::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	// 如果启用了自动加载数据并且设置了有效的数据路径
+	if (bAutoLoadData && !DataFilePath.IsEmpty())
+	{
+		LoadDataFromFile(DataFilePath);
+	}
 }
 
 void AXVChartBase::BackupVertices()
@@ -139,6 +157,178 @@ void AXVChartBase::Tick(float DeltaTime)
 	{
 		CurrentBuildTime = 0.f;
 	}
+}
+
+// 数据加载相关方法实现
+
+bool AXVChartBase::LoadDataFromFile(const FString& FilePath)
+{
+	if (FilePath.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 文件路径为空"));
+		return false;
+	}
+	
+	if (!ChartDataManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 数据管理器未初始化"));
+		return false;
+	}
+	
+	// 保存当前文件路径
+	DataFilePath = FilePath;
+	
+	// 根据文件后缀自动选择加载方法
+	bool bSuccess = LoadDataByFileExtension(FilePath);
+	
+	if (bSuccess)
+	{
+		// 格式化数据
+		FString FormattedData = GetFormattedDataForChart();
+		
+		// 设置图表值
+		if (!FormattedData.IsEmpty())
+		{
+			SetValue(FormattedData);
+			return true;
+		}
+	}
+	
+	return false;
+}
+
+bool AXVChartBase::LoadDataFromString(const FString& Content, const FString& FileExtension)
+{
+	if (Content.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 内容为空"));
+		return false;
+	}
+	
+	if (!ChartDataManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 数据管理器未初始化"));
+		return false;
+	}
+	
+	bool bSuccess = false;
+	
+	// 根据文件扩展名选择合适的加载方法
+	if (FileExtension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
+	{
+		bSuccess = ChartDataManager->LoadFromJsonString(Content);
+	}
+	else if (FileExtension.Equals(TEXT("csv"), ESearchCase::IgnoreCase))
+	{
+		bSuccess = ChartDataManager->LoadFromCsvString(Content);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 不支持的文件扩展名 %s"), *FileExtension);
+		return false;
+	}
+	
+	if (bSuccess)
+	{
+		// 格式化数据
+		FString FormattedData = GetFormattedDataForChart();
+		
+		// 设置图表值
+		if (!FormattedData.IsEmpty())
+		{
+			SetValue(FormattedData);
+			return true;
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 数据加载失败 - %s"), *ChartDataManager->GetLastError());
+	}
+	
+	return false;
+}
+
+bool AXVChartBase::LoadDataByFileExtension(const FString& FilePath)
+{
+	// 获取文件扩展名
+	FString Extension = FPaths::GetExtension(FilePath);
+	
+	// 根据文件扩展名选择合适的加载方法
+	if (Extension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
+	{
+		return ChartDataManager->LoadFromJsonFile(FilePath);
+	}
+	else if (Extension.Equals(TEXT("csv"), ESearchCase::IgnoreCase))
+	{
+		return ChartDataManager->LoadFromCsvFile(FilePath);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 不支持的文件扩展名 %s"), *Extension);
+		return false;
+	}
+}
+
+FString AXVChartBase::GetFormattedDataForChart()
+{
+	// 格式化数据为图表可用的格式
+	return FormatDataByChartType();
+}
+
+FString AXVChartBase::FormatDataByChartType()
+{
+	// 默认实现，子类可重写以提供特定图表类型的实现
+	// 检查图表类型（通过类名判断）
+	FString ClassName = GetClass()->GetName();
+	
+	if (ClassName.Contains(TEXT("BarChart")))
+	{
+		// 柱状图
+		return ChartDataManager->ConvertToBarChartData(
+			PropertyMapping.XProperty,
+			PropertyMapping.YProperty,
+			PropertyMapping.ZProperty
+		);
+	}
+	else if (ClassName.Contains(TEXT("LineChart")))
+	{
+		// 折线图
+		return ChartDataManager->ConvertToLineChartData(
+			PropertyMapping.XProperty,
+			PropertyMapping.YProperty,
+			PropertyMapping.ZProperty
+		);
+	}
+	else if (ClassName.Contains(TEXT("PieChart")))
+	{
+		// 饼图 - 特殊处理（饼图需要返回TMap）
+		TMap<FString, float> PieData = ChartDataManager->ConvertToPieChartData(
+			PropertyMapping.CategoryProperty,
+			PropertyMapping.ValueProperty
+		);
+		
+		// 将TMap转换为JSON字符串
+		FString ResultJson;
+		TArray<TSharedPtr<FJsonValue>> JsonArray;
+		
+		for (const auto& Pair : PieData)
+		{
+			TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
+			JsonObject->SetStringField("name", Pair.Key);
+			JsonObject->SetNumberField("value", Pair.Value);
+			
+			JsonArray.Add(MakeShareable(new FJsonValueObject(JsonObject)));
+		}
+		
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ResultJson);
+		FJsonSerializer::Serialize(JsonArray, Writer);
+		
+		return ResultJson;
+	}
+	
+	// 其他未知类型
+	UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 未知图表类型 %s，无法格式化数据"), *ClassName);
+	return TEXT("");
 }
 
 void AXVChartBase::GeneratePieSectionInfo(const FVector& CenterPosition, const size_t& SectionIndex,
@@ -308,52 +498,18 @@ void AXVChartBase::GeneratePieSectionInfo(const FVector& CenterPosition, const s
 		SectionColor);
 }
 
-float AXVChartBase::GetCursorHitAngle(const FHitResult& HitResult) const
+void AXVChartBase::NotifyActorBeginCursorOver()
 {
-	if (HitResult.GetActor())
-	{
-		FVector UpwardVector = HitResult.GetActor()->GetActorForwardVector();
-		FVector ForwardVector = HitResult.GetActor()->GetActorUpVector();
-		FVector CurPosition = this->GetActorLocation();
-
-		float Distance = FVector::DotProduct(ForwardVector, HitResult.Location - CurPosition);
-		FVector ProjectionP = HitResult.Location - ForwardVector * Distance;
-		FVector Origin2Projection = ProjectionP - GetActorLocation();
-		Origin2Projection.Normalize();
-
-		float DotProduct = FVector::DotProduct(UpwardVector, Origin2Projection);
-		float AngleCos = FMath::Clamp(DotProduct, -1.0f, 1.0f); // 限制范围以避免可能的计算误差
-		float AngleRadians = acos(AngleCos); // 计算弧度
-		float AngleDegrees = FMath::RadiansToDegrees(AngleRadians); // 将弧度转换为度
-
-		FVector CrossProduct = FVector::CrossProduct(UpwardVector, Origin2Projection);
-		if (FVector::DotProduct(CrossProduct, ForwardVector) < 0)
-		{
-			AngleDegrees = 360 - AngleDegrees; // 如果需要的话，调整角度值
-		}
-		return AngleDegrees;
-	}
-	return -1;
+	Super::NotifyActorBeginCursorOver();
+	bIsMouseEntered = true;
+	UpdateOnMouseEnterOrLeft();
 }
 
-FVector AXVChartBase::GetCursorHitRowAndColAndHeight(const FHitResult& HitResult) const
+void AXVChartBase::NotifyActorEndCursorOver()
 {
-	FVector Result(-1, -1, -1);
-	if (HitResult.GetActor())
-	{
-		FVector ForwardVector = HitResult.GetActor()->GetActorForwardVector()* GetActorScale();
-		FVector UpwardVector = HitResult.GetActor()->GetActorUpVector() *GetActorScale();
-		FVector RightwardVector = HitResult.GetActor()->GetActorRightVector()* GetActorScale();
-		
-		FVector ProjectionP = HitResult.Location - GetActorLocation();
-
-		float X = ProjectionP.Dot(ForwardVector) / ForwardVector.Length();
-		float Y = ProjectionP.Dot(RightwardVector) / RightwardVector.Length();
-		float Z = ProjectionP.Dot(UpwardVector) / UpwardVector.Length();
-		
-		Result = FVector{ X,Y,Z};
-	}
-	return Result;
+	Super::NotifyActorEndCursorOver();
+	bIsMouseEntered = false;
+	UpdateOnMouseEnterOrLeft();
 }
 
 const FHitResult AXVChartBase::GetCursorHitResult() const
@@ -361,24 +517,44 @@ const FHitResult AXVChartBase::GetCursorHitResult() const
 	return XVChartUtils::GetCursorHitResult(GetWorld());
 }
 
-void AXVChartBase::NotifyActorBeginCursorOver()
+float AXVChartBase::GetCursorHitAngle(const FHitResult& HitResult) const
 {
-	Super::NotifyActorBeginCursorOver();
-	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
-	if (PlayerController)
+	// 计算鼠标点击的角度，默认实现
+	if (HitResult.bBlockingHit)
 	{
-		PlayerController->CurrentMouseCursor = EMouseCursor::Hand;
+		// 计算点击位置到Actor中心的向量
+		FVector HitLocation = HitResult.Location;
+		FVector CenterLocation = GetActorLocation();
+
+		// 计算在XY平面上的角度
+		FVector Direction = HitLocation - CenterLocation;
+		Direction.Z = 0; // 忽略Z轴方向
+		Direction.Normalize();
+
+		// 计算角度（弧度）
+		float Angle = FMath::Atan2(Direction.Y, Direction.X);
+		
+		// 将角度转换为0-360度
+		if (Angle < 0)
+		{
+			Angle += 2 * PI;
+		}
+		
+		return Angle;
 	}
-	bIsMouseEntered = true;
+	
+	return 0.0f;
 }
 
-void AXVChartBase::NotifyActorEndCursorOver()
+FVector AXVChartBase::GetCursorHitRowAndColAndHeight(const FHitResult& HitResult) const
 {
-	Super::NotifyActorEndCursorOver();
-	APlayerController* PlayerController = GetWorld()->GetFirstPlayerController();
-	if (PlayerController)
+	// 计算鼠标点击的行列和高度，默认实现，子类可重写
+	if (HitResult.bBlockingHit)
 	{
-		PlayerController->CurrentMouseCursor = EMouseCursor::Type::Default;
+		// 转换世界坐标到局部坐标
+		FVector LocalHitLocation = GetActorTransform().InverseTransformPosition(HitResult.Location);
+		return LocalHitLocation;
 	}
-	bIsMouseEntered = false;
+	
+	return FVector::ZeroVector;
 }

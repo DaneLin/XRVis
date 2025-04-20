@@ -20,7 +20,7 @@ public:
     virtual bool ReadFromString(const FString& Content) override;
 
     /** 从数组型JSON读取 - 注意：此方法不暴露给蓝图 */
-    bool ReadFromJsonArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray, bool bHasHeaderRow = true);
+    bool ReadFromJsonArray(const TArray<TSharedPtr<FJsonValue>>& JsonArray, bool bHasHeaderRow = false);
 
     /** 从对象型JSON读取 - 注意：此方法不暴露给蓝图 */
     bool ReadFromJsonObject(const TSharedPtr<FJsonObject>& JsonObject);
