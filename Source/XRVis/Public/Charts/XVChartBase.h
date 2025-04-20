@@ -16,23 +16,23 @@ struct FXVChartPropertyMapping
 	GENERATED_BODY()
 
 	/** X轴属性名称 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="X轴属性名称"))
 	FString XProperty;
 
 	/** Y轴属性名称 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="Y轴属性名称"))
 	FString YProperty;
 
 	/** Z轴属性名称（值） */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="Z轴属性名称（值）"))
 	FString ZProperty;
 
 	/** 分类属性名称（饼图） */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="分类属性名称（饼图）"))
 	FString CategoryProperty;
 
 	/** 数值属性名称（饼图） */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="数值属性名称（饼图）"))
 	FString ValueProperty;
 };
 
@@ -43,27 +43,27 @@ class XRVIS_API AXVChartBase : public AActor
 
 public:
 	/* 发光强度 */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | Style")
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Style", meta=(ToolTip="发光强度"))
 	float EmissiveIntensity;
 
 	/* 发光颜色 */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | Style")
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Style", meta=(ToolTip="发光颜色"))
 	FLinearColor EmissiveColor;
 
 	/* 是否开启入场动画 */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | Animation")
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Animation", meta=(ToolTip="是否开启入场动画"))
 	bool bEnableEnterAnimation;
 
 	/* 数据文件路径 */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | Data")
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Data", meta=(ToolTip="数据文件路径"))
 	FString DataFilePath;
 
 	/* 属性映射 */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | Data")
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Data", meta=(ToolTip="属性映射"))
 	FXVChartPropertyMapping PropertyMapping;
 
 	/* 是否自动加载数据 */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | Data")
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Data", meta=(ToolTip="是否自动加载数据"))
 	bool bAutoLoadData;
 
 public:

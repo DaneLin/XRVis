@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -30,99 +30,99 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	//×ø±êÖáÎ»ÒÆ
+	//åæ ‡è½´ä½ç§»
 	UPROPERTY(EditAnywhere,Category="Axis Property | Displacement")
 	FVector AxisDisplacement = FVector(0, 0, 0);
 
-	// ÊÇ·ñËæÊÓ½Ç±ä»¯×Ô¶¯±ä»¯×ø±êÖáµÄ³¯Ïò¡£
+	// æ˜¯å¦éšè§†è§’å˜åŒ–è‡ªåŠ¨å˜åŒ–åæ ‡è½´çš„æœå‘ã€‚
 	UPROPERTY(EditAnywhere,Category="Axis Property | Displacement")
 	bool bAutoSwitch = false;
 
-	//Íø¸ñÏß´ÖÏ¸
+	//ç½‘æ ¼çº¿ç²—ç»†
 	UPROPERTY(EditAnywhere,Category="Axis Property | Line Thickness")
 	float GridLineThickness = 1.f;
 
-	//×ø±êÖáÏß´ÖÏ¸
+	//åæ ‡è½´çº¿ç²—ç»†
 	UPROPERTY(EditAnywhere,Category="Axis Property | Line Thickness")
 	float AxisLineThickness = 1.5f;
 
-	//xÖáÏß³¤¶È²ÎÊı
+	//xè½´çº¿é•¿åº¦å‚æ•°
 	UPROPERTY(EditAnywhere,Category="Axis Property | Line Length")
 	float xAxisLineLengthParam = 0.5f;
 
-	//yÖáÏß³¤¶È²ÎÊı
+	//yè½´çº¿é•¿åº¦å‚æ•°
 	UPROPERTY(EditAnywhere,Category="Axis Property | Line Length")
 	float yAxisLineLengthParam = 0.5f;
 
-	//zÖáÏß³¤¶È²ÎÊı
+	//zè½´çº¿é•¿åº¦å‚æ•°
 	UPROPERTY(EditAnywhere,Category="Axis Property | Line Length")
 	float zAxisLineLengthParam = 0.5f;
 
-	//×ø±êÖáÏß³¤¶È
+	//åæ ‡è½´çº¿é•¿åº¦
 	UPROPERTY(EditAnywhere,Category="Axis Property | Line Length")
 	float AxisLineLength = 100.f;
 
-	//×ø±êÖáÑÕÉ«
+	//åæ ‡è½´é¢œè‰²
 	UPROPERTY(EditAnywhere,Category="Axis Property | Axis Color")
 	FColor AxisColor = FColor::Black;
 
-	//xÖáÍø¸ñÊı
+	//xè½´ç½‘æ ¼æ•°
 	UPROPERTY(EditAnywhere,Category="Axis Property | Grid Num")
 	int xAxisGridNum = 12;
 
-	//yÖáÍø¸ñÊı
+	//yè½´ç½‘æ ¼æ•°
 	UPROPERTY(EditAnywhere,Category="Axis Property | Grid Num")
 	int yAxisGridNum = 3;
 
-	//zÖáÍø¸ñÊı
+	//zè½´ç½‘æ ¼æ•°
 	UPROPERTY(EditAnywhere,Category="Axis Property | Grid Num")
 	int zAxisGridNum = 5; 
 
-	//xÖá¼ä¸ô
+	//xè½´é—´éš”
 	UPROPERTY(EditAnywhere,Category="Axis Property | Grid Interval")
 	float xAxisInterval = 13.f;
 
-	//yÖá¼ä¸ô
+	//yè½´é—´éš”
 	UPROPERTY(EditAnywhere,Category="Axis Property | Grid Interval")
 	float yAxisInterval = 13.f;
 
-	//zÖá¼ä¸ô
+	//zè½´é—´éš”
 	UPROPERTY(EditAnywhere,Category="Axis Property | Grid Interval")
 	float zAxisInterval = 30.f;
 
-	//xÖáÎÄ×Ö´óĞ¡
+	//xè½´æ–‡å­—å¤§å°
 	UPROPERTY(EditAnywhere,Category="Axis Property | Text Size")
 	float xTextSize = 5.0f;
 
-	//yÖáÎÄ×Ö´óĞ¡
+	//yè½´æ–‡å­—å¤§å°
 	UPROPERTY(EditAnywhere,Category="Axis Property | Text Size")
 	float yTextSize = 5.0f;
 
-	//zÖáÎÄ×Ö´óĞ¡
+	//zè½´æ–‡å­—å¤§å°
 	UPROPERTY(EditAnywhere,Category="Axis Property | Text Size")
 	float zTextSize = 5.0f;
 
-	//ÎÄ×ÖÓëxÖáµÄ¾àÀë
+	//æ–‡å­—ä¸xè½´çš„è·ç¦»
 	UPROPERTY(EditAnywhere,Category="Axis Property | Gap")
 	float DistanceOfTextAndXAxis = 0.f; 
 
-	//ÎÄ×ÖÓëyÖáµÄ¾àÀë
+	//æ–‡å­—ä¸yè½´çš„è·ç¦»
 	UPROPERTY(EditAnywhere,Category="Axis Property | Gap")
 	float DistanceOfTextAndYAxis = 0.f;
 
-	//ÎÄ×ÖÓëzÖáµÄ¾àÀë
+	//æ–‡å­—ä¸zè½´çš„è·ç¦»
 	UPROPERTY(EditAnywhere,Category="Axis Property | Gap")
 	float DistanceOfTextAndZAxis = 0.f;
 
-	//xÖáÎÄ×ÖÑÕÉ«
+	//xè½´æ–‡å­—é¢œè‰²
 	UPROPERTY(EditAnywhere,Category="Axis Property | Text Color")
 	FColor xAxisTextColor = FColor::Black;
 
-	//yÖáÎÄ×ÖÑÕÉ«
+	//yè½´æ–‡å­—é¢œè‰²
 	UPROPERTY(EditAnywhere,Category="Axis Property | Text Color")
 	FColor yAxisTextColor = FColor::Black;
 
-	//zÖáÎÄ×ÖÑÕÉ«
+	//zè½´æ–‡å­—é¢œè‰²
 	UPROPERTY(EditAnywhere,Category="Axis Property | Text Color")
 	FColor zAxisTextColor = FColor::Black;
 
@@ -130,7 +130,7 @@ public:
 
 	void UpdateAxisTextVisibility(bool bIsHidden);
 
-	//ÉèÖÃ×ø±êÖáÎÄ×Ö
+	//è®¾ç½®åæ ‡è½´æ–‡å­—
 	void SetXAxisText(const TArray<FString>& xText);
 
 	void SetYAxisText(const TArray<FString>& yText);
@@ -139,7 +139,7 @@ public:
 
 	void SetAxisText(const TArray<FString>& xText,const TArray<FString>& yText,const TArray<FString>& zText);
 
-	//ÉèÖÃ×ø±êÖá¿Ì¶ÈÎÄ×Ö
+	//è®¾ç½®åæ ‡è½´åˆ»åº¦æ–‡å­—
 	void SetXAxisScaleText(const float& xMin,const float& xMax);
 
 	void SetYAxisScaleText(const float& yMin, const float& yMax);
@@ -150,139 +150,139 @@ public:
 
 private:
 
-	//¸¸¼¶Í¼±í
+	//çˆ¶çº§å›¾è¡¨
 	AActor* ParentActor = nullptr;
 
-	//×ø±êÖá±ä»»
+	//åæ ‡è½´å˜æ¢
 	FTransform AxisTransform;
 
-	//xÖáÎÄ×Ö×é¼ş
+	//xè½´æ–‡å­—ç»„ä»¶
 	TArray<UTextRenderComponent*> XAxisTextComponents;
 
-	//yÖáÎÄ×Ö×é¼ş
+	//yè½´æ–‡å­—ç»„ä»¶
 	TArray<UTextRenderComponent*> YAxisTextComponents;
 
-	//zÖáÎÄ×Ö×é¼ş
+	//zè½´æ–‡å­—ç»„ä»¶
 	TArray<UTextRenderComponent*> ZAxisTextComponents;
 
-	//×ÖÌå
+	//å­—ä½“
 	UFont* Font = nullptr;
 
-	//×ÖÌå²ÄÖÊ
+	//å­—ä½“æè´¨
 	UMaterial* FontMaterial = nullptr;
 
-	//xÖáÎÄ×Ö
+	//xè½´æ–‡å­—
 	TArray<FString> XAxisTexts;
 
-	//yÖáÎÄ×Ö
+	//yè½´æ–‡å­—
 	TArray<FString> YAxisTexts;
 
-	//zÖáÎÄ×Ö
+	//zè½´æ–‡å­—
 	TArray<FString> ZAxisTexts;
 
-	//xÖá¿Ì¶ÈÎÄ×Ö
+	//xè½´åˆ»åº¦æ–‡å­—
 	TArray<FString> XScaleTexts;
 
-	//yÖá¿Ì¶ÈÎÄ×Ö
+	//yè½´åˆ»åº¦æ–‡å­—
 	TArray<FString> YScaleTexts;
 
-	//zÖá¿Ì¶ÈÎÄ×Ö
+	//zè½´åˆ»åº¦æ–‡å­—
 	TArray<FString> ZScaleTexts;
 
-	//xÖáÎÄ×Ö»æÖÆ×´Ì¬
+	//xè½´æ–‡å­—ç»˜åˆ¶çŠ¶æ€
 	ETextRenderState TextRenderStateX = ETextRenderState::RenderNone;
 
-	//yÖáÎÄ×Ö»æÖÆ×´Ì¬
+	//yè½´æ–‡å­—ç»˜åˆ¶çŠ¶æ€
 	ETextRenderState TextRenderStateY = ETextRenderState::RenderNone;
 
-	//zÖáÎÄ×Ö»æÖÆ×´Ì¬
+	//zè½´æ–‡å­—ç»˜åˆ¶çŠ¶æ€
 	ETextRenderState TextRenderStateZ = ETextRenderState::RenderNone;
 
-	//xÖá×î´óÖµ
+	//xè½´æœ€å¤§å€¼
 	float AxisMaxX = 3;
 
-	//xÖá×îĞ¡Öµ
+	//xè½´æœ€å°å€¼
 	float AxisMinX = -3;
 
-	//yÖá×î´óÖµ
+	//yè½´æœ€å¤§å€¼
 	float AxisMaxY = 2560.164646;
 
-	//yÖá×îĞ¡Öµ
+	//yè½´æœ€å°å€¼
 	float AxisMinY = 128.145555;
 
-	//zÖá×î´óÖµ
+	//zè½´æœ€å¤§å€¼
 	float AxisMaxZ = 0.114654;
 
-	//zÖá×îĞ¡Öµ
+	//zè½´æœ€å°å€¼
 	float AxisMinZ = 0.091545;
 
-	//¿Ì¶È¼ÆËãÊı×é
+	//åˆ»åº¦è®¡ç®—æ•°ç»„
 	float MagicArray[26] = { 0.000001,0.00001,0.0001,0.001,0.01,0.1,1.,10.,100.,1000.,10000.,100000.,1000000.,10000000.,100000000.,1000000000.,10000000000.,100000000000.,1000000000000.,10000000000000., 100000000000000.,1000000000000000.,10000000000000000.,100000000000000000.,1000000000000000000.,10000000000000000000. };
 private:
 
-	//¸üĞÂ×ø±êÖá±ä»»
+	//æ›´æ–°åæ ‡è½´å˜æ¢
 	void UpdateAxisTransform();
 
-	//»ñÈ¡×ÖÌå
+	//è·å–å­—ä½“
 	void InitAxisFont();
 
-	//»æÖÆÏßÌõ
-	//LineStart£º¾Ö²¿×ø±êÎ»ÖÃÆğµã
-	//LineEnd£º¾Ö²¿×ø±êÎ»ÖÃÖÕµã
+	//ç»˜åˆ¶çº¿æ¡
+	//LineStartï¼šå±€éƒ¨åæ ‡ä½ç½®èµ·ç‚¹
+	//LineEndï¼šå±€éƒ¨åæ ‡ä½ç½®ç»ˆç‚¹
 	void DrawLine(const UWorld* InWorld, FVector const& LineStart, FVector const& LineEnd, FColor const& Color, bool bPersistentLines = false, float LifeTime = -1.f, uint8 DepthPriority = 0, float Thickness = 0.f);
 
-	//»æÖÆ×ø±êÖá
+	//ç»˜åˆ¶åæ ‡è½´
 	void DrawAxis(float DeltaTime);
 
-	//»æÖÆÍø¸ñÏß
+	//ç»˜åˆ¶ç½‘æ ¼çº¿
 	void DrawGridLine(float duration);
 
-	//»æÖÆ×ø±êÖáÏß
+	//ç»˜åˆ¶åæ ‡è½´çº¿
 	void DrawAxisLine(float duration);
 
-	//¸üĞÂÎÄ×Ö
+	//æ›´æ–°æ–‡å­—
 	void UpdateText();
 
-	//¸üĞÂXÖáÎÄ×Ö
+	//æ›´æ–°Xè½´æ–‡å­—
 	void UpdateXAxisText();
 
-	//¸üĞÂYÖáÎÄ×Ö
+	//æ›´æ–°Yè½´æ–‡å­—
 	void UpdateYAxisText();
 
-	//¸üĞÂZÖáÎÄ×Ö
+	//æ›´æ–°Zè½´æ–‡å­—
 	void UpdateZAxisText();
 
-	//¸üĞÂXÖá¿Ì¶ÈÎÄ×Ö
+	//æ›´æ–°Xè½´åˆ»åº¦æ–‡å­—
 	void UpdateXAxisScaleText();
 
-	//¸üĞÂYÖá¿Ì¶ÈÎÄ×Ö
+	//æ›´æ–°Yè½´åˆ»åº¦æ–‡å­—
 	void UpdateYAxisScaleText();
 
-	//¸üĞÂZÖá¿Ì¶ÈÎÄ×Ö
+	//æ›´æ–°Zè½´åˆ»åº¦æ–‡å­—
 	void UpdateZAxisScaleText();
 
-	//»ñÈ¡XÖá¿Ì¶ÈÎÄ×Ö
+	//è·å–Xè½´åˆ»åº¦æ–‡å­—
 	void GetXAxisScaleText();
 
-	//»ñÈ¡YÖá¿Ì¶ÈÎÄ×Ö
+	//è·å–Yè½´åˆ»åº¦æ–‡å­—
 	void GetYAxisScaleText();
 
-	//»ñÈ¡ZÖá¿Ì¶ÈÎÄ×Ö
+	//è·å–Zè½´åˆ»åº¦æ–‡å­—
 	void GetZAxisScaleText();
 
-	//´´½¨ĞÂµÄTextComponent
+	//åˆ›å»ºæ–°çš„TextComponent
 	UTextRenderComponent* CreateTextComponent(const FString& Text, const FColor& Color, const float& Size, const float& Scale);
 
-	//¸üĞÂ¾ÉµÄTextComponent
+	//æ›´æ–°æ—§çš„TextComponent
 	void UpdateTextComponent(UTextRenderComponent* TextComponent,const FString& Text, const FColor& Color,const float& Size, const float& Scale);
 
-	//¸üĞÂTextComponent±ä»»
+	//æ›´æ–°TextComponentå˜æ¢
 	void UpdateTextComponentsTransform();
 
-	//¸üĞÂTextComponent³¯Ïò,0ÎªxÖá£¬1ÎªyÖá£¬2ÎªzÖá
+	//æ›´æ–°TextComponentæœå‘,0ä¸ºxè½´ï¼Œ1ä¸ºyè½´ï¼Œ2ä¸ºzè½´
 	void UpdateTextComponentRotation(UTextRenderComponent* TextComponent,const int& type);
 
-	//»ñÈ¡»æÖÆÅĞ¶ÏÏòÁ¿
+	//è·å–ç»˜åˆ¶åˆ¤æ–­å‘é‡
 	FVector GetJudgeVector();
 
 };

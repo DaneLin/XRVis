@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -37,39 +37,39 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	/**
-	 * »ùÓÚÈıÎ¬Êı¾İÔÚÖ¸¶¨×ø±êÏµÄÚ´´½¨±ı×´Í¼¡£
-	 * @param Data - ÓÃÓÚÉú³ÉÈıÎ¬Í¼µÄÊı¾İ£¬¼üÖµ¶ÔĞÎÊ½¡£
-	 * @param ChartStyle - ÉèÖÃÉú³ÉµÄÈıÎ¬±ı×´Í¼µÄÑùÊ½¡£
-	 * @param PieChartColor - ÉèÖÃÉú³ÉµÄÈıÎ¬±ı×´Í¼Ã¿¸öÇøÓòµÄÑÕÉ«¡£
-	 * @param Shape - ÉèÖÃ±ı×´Í¼ĞÎ×´¡£
+	 * åŸºäºä¸‰ç»´æ•°æ®åœ¨æŒ‡å®šåæ ‡ç³»å†…åˆ›å»ºé¥¼çŠ¶å›¾ã€‚
+	 * @param Data - ç”¨äºç”Ÿæˆä¸‰ç»´å›¾çš„æ•°æ®ï¼Œé”®å€¼å¯¹å½¢å¼ã€‚
+	 * @param ChartStyle - è®¾ç½®ç”Ÿæˆçš„ä¸‰ç»´é¥¼çŠ¶å›¾çš„æ ·å¼ã€‚
+	 * @param PieChartColor - è®¾ç½®ç”Ÿæˆçš„ä¸‰ç»´é¥¼çŠ¶å›¾æ¯ä¸ªåŒºåŸŸçš„é¢œè‰²ã€‚
+	 * @param Shape - è®¾ç½®é¥¼çŠ¶å›¾å½¢çŠ¶ã€‚
 	 */
 	UFUNCTION(BlueprintCallable)
 	void Create3DPieChart(const TMap<FString, float>& Data, EPieChartStyle ChartStyle, const TArray<FColor>& PieChartColor,
 	                      EPieShape Shape);
 
 	/**
-	 * ÉèÖÃ±ı×´Í¼µÄÑùÊ½ºÍÑÕÉ«¡£
-	 * @param ChartStyle - ÉèÖÃÉú³ÉµÄÈıÎ¬±ı×´Í¼µÄÑùÊ½¡£
-	 * @param PieChartColor - ÉèÖÃÉú³ÉµÄÈıÎ¬±ı×´Í¼Ã¿¸öÇøÓòµÄÑÕÉ«¡£
-	 * @param Shape - ÉèÖÃ±ı×´Í¼ĞÎ×´¡£
+	 * è®¾ç½®é¥¼çŠ¶å›¾çš„æ ·å¼å’Œé¢œè‰²ã€‚
+	 * @param ChartStyle - è®¾ç½®ç”Ÿæˆçš„ä¸‰ç»´é¥¼çŠ¶å›¾çš„æ ·å¼ã€‚
+	 * @param PieChartColor - è®¾ç½®ç”Ÿæˆçš„ä¸‰ç»´é¥¼çŠ¶å›¾æ¯ä¸ªåŒºåŸŸçš„é¢œè‰²ã€‚
+	 * @param Shape - è®¾ç½®é¥¼çŠ¶å›¾å½¢çŠ¶ã€‚
 	 */
 	UFUNCTION(BlueprintCallable)
 	void Set3DPieChart(EPieChartStyle ChartStyle, const TArray<FColor>& PieChartColor, EPieShape Shape);
 
 	/**
-	 * ĞŞ¸ÄÇø¿éÑÕÉ«
+	 * ä¿®æ”¹åŒºå—é¢œè‰²
 	 */
 	UFUNCTION(BlueprintCallable)
 	void ColorModify(int ModifyIndex, const FColor& Color);
 	
 	/**
-	 * ¸ßÁÁÇø¿é
+	 * é«˜äº®åŒºå—
 	 */
 	UFUNCTION(BlueprintCallable)
 	void Highlight(int ModifyIndex, float HighlightIntensity);	
 
 	/**
-	 * »ñÈ¡Çø¿éË÷Òı
+	 * è·å–åŒºå—ç´¢å¼•
 	 */
 	UFUNCTION(BlueprintCallable)
 	int GetSectionIndex();
@@ -83,12 +83,12 @@ protected:
 	virtual void BeginPlay() override;
 	
 	/**
-	 * ´¦ÀíÀàĞÍºÍĞÎ×´ĞÅÏ¢
+	 * å¤„ç†ç±»å‹å’Œå½¢çŠ¶ä¿¡æ¯
 	 */
 	void ProcessTypeAndShapeInfo();
 	
 	/**
-	 * ¸üĞÂÇø¿é
+	 * æ›´æ–°åŒºå—
 	 */
 	void UpdateSection(const size_t& UpdateSectionIndex, const bool& InSelected, const float& InIR,
 	                   const float& InER, const float& InEmissiveIntensity);
@@ -107,25 +107,25 @@ private:
 	int HoveredSectionIndex = -1;
 
 	/**
-	 * ÊÇ·ñÆôÓÃËõ·Å¶¯»­
+	 * æ˜¯å¦å¯ç”¨ç¼©æ”¾åŠ¨ç”»
 	 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Animation", meta=(AllowPrivateAccess = true))
 	bool bEnableZoomAnimation;
 
 	/**
-	 * Ëõ·ÅÆ«ÒÆÁ¿
+	 * ç¼©æ”¾åç§»é‡
 	 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Animation", meta=(AllowPrivateAccess = true,EditCondition="bEnableZoomAnimation", EditConditionHides))
 	float ZoomOffset;
 
 	/**
-	 * ÊÇ·ñÆôÓÃµ¯Ìø¶¯»­
+	 * æ˜¯å¦å¯ç”¨å¼¹è·³åŠ¨ç”»
 	 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Animation", meta=(AllowPrivateAccess = true))
 	bool bEnablePopAnimation;
 
 	/**
-	 * ÊÇ·ñÆôÓÃµ¯Ìø¶¯»­
+	 * æ˜¯å¦å¯ç”¨å¼¹è·³åŠ¨ç”»
 	 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Animation", meta=(AllowPrivateAccess = true,EditCondition="bEnablePopAnimation", EditConditionHides))
 	float PopOffset;
@@ -137,85 +137,85 @@ private:
 	FVector CenterPosition = FVector::ZeroVector;
 
 	/**
-	 * ±ı×´Í¼ÑùÊ½
+	 * é¥¼çŠ¶å›¾æ ·å¼
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style", meta=(AllowPrivateAccess = true))
 	EPieChartStyle PieChartStyle = EPieChartStyle::Base;
 
 	/**
-	 * ±ı×´Í¼ĞÎ×´
+	 * é¥¼çŠ¶å›¾å½¢çŠ¶
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style", meta=(AllowPrivateAccess = true))
 	EPieShape PieShape = EPieShape::Round;
 
 	/**
-	 * ÊÇ·ñ¾ßÓĞÄÚ¾¶
+	 * æ˜¯å¦å…·æœ‰å†…å¾„
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style", meta=(AllowPrivateAccess = true))
 	bool bHasInternalDiameter = false;
 	
 	/**
-	 * ÄÚ¾¶
+	 * å†…å¾„
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style", meta=(AllowPrivateAccess = true))
 	float InternalDiameter = 110.f;
 
 	/**
-	 * Íâ¾¶
+	 * å¤–å¾„
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style", meta=(AllowPrivateAccess = true))
 	float ExternalDiameter = 185.f;
 
 	/**
-	 * Çø¿é¸ß¶È
+	 * åŒºå—é«˜åº¦
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style", meta=(AllowPrivateAccess = true))
 	float SectionHeight = 50.f;
 
 	/**
-	 * ÊÇ·ñ¾ßÓĞÇø¿é¼ä¾à
+	 * æ˜¯å¦å…·æœ‰åŒºå—é—´è·
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style", meta=(AllowPrivateAccess = true))
 	bool bIsSectionGaped = false;
 
 	/**
-	 * Çø¿é¼ä¾à½Ç¶È
+	 * åŒºå—é—´è·è§’åº¦
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style", meta=(AllowPrivateAccess = true))
 	float SectionGapAngle = 5.0f;
 
 	/**
-	 * ÊÇ·ñÎªÄÏ¶¡¸ñ¶ûÃµ¹åÑùÊ½
+	 * æ˜¯å¦ä¸ºå—ä¸æ ¼å°”ç«ç‘°æ ·å¼
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style", meta=(AllowPrivateAccess = true))
 	bool bIsShapeNightingale = false;
 
 	/**
-	 * ÄÏ¶¡¸ñ¶ûÃµ¹åÑùÊ½Æ«ÒÆÁ¿
+	 * å—ä¸æ ¼å°”ç«ç‘°æ ·å¼åç§»é‡
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style", meta=(AllowPrivateAccess = true))
 	float NightingaleOffset = 10.f;
 	
 	/**
-	 * ÀÛ»ıÖµ
+	 * ç´¯ç§¯å€¼
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	TArray<double> AccumulatedValues;
 
 	/**
-	 * ×îÖÕÄÏ¶¡¸ñ¶ûÃµ¹åÑùÊ½Æ«ÒÆÁ¿
+	 * æœ€ç»ˆå—ä¸æ ¼å°”ç«ç‘°æ ·å¼åç§»é‡
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	float FinalNightingaleOffset;
 
 	/**
-	 * ×îÖÕÄÚ¾¶
+	 * æœ€ç»ˆå†…å¾„
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	float FinalInternalDiameter;
 
 	/**
-	 * ×îÖÕÇø¿é¼ä¾à½Ç¶È
+	 * æœ€ç»ˆåŒºå—é—´è·è§’åº¦
 	 */
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	float FinalSectionGapAngle;

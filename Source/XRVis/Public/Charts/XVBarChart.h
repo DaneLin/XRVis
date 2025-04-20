@@ -121,29 +121,22 @@ private:
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	TArray<FColor> Colors;
 
-	// 当前鼠标悬停位置
-	UPROPERTY(VisibleAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
+	UPROPERTY(VisibleAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true, ToolTip="当前鼠标悬停位置"))
 	int HoveredIndex = -1;
 
-	// 当前鼠标点击时选中的柱体下标
-	UPROPERTY(BlueprintReadWrite, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
+	UPROPERTY(BlueprintReadWrite, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true, ToolTip="当前鼠标点击时选中的柱体下标"))
 	int ClickedIndex = -1;
 	
-	// X轴上的间距
-	UPROPERTY(EditAnywhere, Category="Chart Property | Bar", meta=(AllowPrivateAccess = true, ClampMin="0"))
+	UPROPERTY(EditAnywhere, Category="Chart Property | Bar", meta=(AllowPrivateAccess = true, ClampMin="0", ToolTip="X轴上的间距"))
 	int XAxisInterval;
 	
-	// Y轴上的间距
-	UPROPERTY(EditAnywhere, Category="Chart Property | Bar", meta=(AllowPrivateAccess = true, ClampMin="0"))
+	UPROPERTY(EditAnywhere, Category="Chart Property | Bar", meta=(AllowPrivateAccess = true, ClampMin="0", ToolTip="Y轴上的间距"))
 	int YAxisInterval;
 
-	// 柱体宽度
-	UPROPERTY(EditAnywhere, Category="Chart Property | Bar", meta=(AllowPrivateAccess = true, ClampMin="0"))
+	UPROPERTY(EditAnywhere, Category="Chart Property | Bar", meta=(AllowPrivateAccess = true, ClampMin="0", ToolTip="柱体宽度"))
 	int Width;
 
-	// 柱体长度
-	UPROPERTY(EditAnywhere, Category="Chart Property | Bar", meta=(AllowPrivateAccess = true, ClampMin="0"))
+	UPROPERTY(EditAnywhere, Category="Chart Property | Bar", meta=(AllowPrivateAccess = true, ClampMin="0", ToolTip="柱体长度"))
 	int Length;
-
 
 };
