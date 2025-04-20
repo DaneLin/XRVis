@@ -36,6 +36,27 @@ void AXVChartAxis::Tick(float DeltaTime)
 	
 }
 
+void AXVChartAxis::SetAxisGridNum(const int& xGridNum, const int& yGridNum, const int& zGridNum)
+{
+	// 设置各轴的网格数量
+	xAxisGridNum = FMath::Max(1, xGridNum); // 确保至少有1个网格
+	yAxisGridNum = FMath::Max(1, yGridNum);
+	zAxisGridNum = FMath::Max(1, zGridNum);
+	
+	// 如果已经有刻度文本，则清除并重新生成
+	if (!XScaleTexts.IsEmpty() || !YScaleTexts.IsEmpty() || !ZScaleTexts.IsEmpty())
+	{
+		XScaleTexts.Empty();
+		YScaleTexts.Empty();
+		ZScaleTexts.Empty();
+		
+		// 根据新的网格数重新获取刻度文本
+		GetXAxisScaleText();
+		GetYAxisScaleText();
+		GetZAxisScaleText();
+	}
+}
+
 void AXVChartAxis::UpdateAxisTransform()
 {
 	if (ParentActor)

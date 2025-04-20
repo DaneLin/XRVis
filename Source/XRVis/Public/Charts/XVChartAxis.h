@@ -148,6 +148,10 @@ public:
 
 	void SetAxisScaleText(const float& xMin,const float& xMax, const float& yMin, const float& yMax, const float& zMin, const float& zMax);
 
+	//设置所有坐标轴网格数
+	UFUNCTION(BlueprintCallable, Category="Axis Property | Grid Num")
+	void SetAxisGridNum(const int& xGridNum, const int& yGridNum, const int& zGridNum);
+
 private:
 
 	//父级图表
@@ -218,6 +222,7 @@ private:
 
 	//刻度计算数组
 	float MagicArray[26] = { 0.000001,0.00001,0.0001,0.001,0.01,0.1,1.,10.,100.,1000.,10000.,100000.,1000000.,10000000.,100000000.,1000000000.,10000000000.,100000000000.,1000000000000.,10000000000000., 100000000000000.,1000000000000000.,10000000000000000.,100000000000000000.,1000000000000000000.,10000000000000000000. };
+
 private:
 
 	//更新坐标轴变换

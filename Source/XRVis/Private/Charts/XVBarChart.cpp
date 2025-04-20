@@ -61,6 +61,7 @@ void AXVBarChart::BeginPlay()
 			ChartAxis->SetXAxisText(x_Text);
 			ChartAxis->SetYAxisText(y_Text);
 			ChartAxis->SetZAxisText(z_Text);
+			ChartAxis->SetAxisGridNum(XAxisLabels.Num(), YAxisLabels.Num(),5);
 		}
 	}
 }
