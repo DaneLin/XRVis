@@ -1,502 +1,502 @@
 [
   {
-    "region": "\u5317\u90e8",
-    "product": "\u624b\u673a",
-    "sales": 79
+    "region": "North",
+    "product": "Phone",
+    "sales": 62
   },
   {
-    "region": "\u5317\u90e8",
-    "product": "\u7535\u8111",
-    "sales": 77
+    "region": "North",
+    "product": "Computer",
+    "sales": 62
   },
   {
-    "region": "\u5317\u90e8",
-    "product": "\u5e73\u677f",
-    "sales": 58
+    "region": "North",
+    "product": "Tablet",
+    "sales": 72
   },
   {
-    "region": "\u5317\u90e8",
-    "product": "\u8033\u673a",
-    "sales": 56
+    "region": "North",
+    "product": "Headphone",
+    "sales": 63
   },
   {
-    "region": "\u5317\u90e8",
-    "product": "\u624b\u8868",
-    "sales": 41
-  },
-  {
-    "region": "\u5317\u90e8",
-    "product": "\u76f8\u673a",
-    "sales": 29
-  },
-  {
-    "region": "\u5317\u90e8",
-    "product": "\u6e38\u620f\u673a",
-    "sales": 23
-  },
-  {
-    "region": "\u5317\u90e8",
-    "product": "\u97f3\u7bb1",
-    "sales": 24
-  },
-  {
-    "region": "\u5317\u90e8",
-    "product": "\u8def\u7531\u5668",
-    "sales": 10
-  },
-  {
-    "region": "\u5317\u90e8",
-    "product": "\u7535\u89c6",
-    "sales": 12
-  },
-  {
-    "region": "\u5357\u90e8",
-    "product": "\u624b\u673a",
-    "sales": 71
-  },
-  {
-    "region": "\u5357\u90e8",
-    "product": "\u7535\u8111",
-    "sales": 74
-  },
-  {
-    "region": "\u5357\u90e8",
-    "product": "\u5e73\u677f",
-    "sales": 64
-  },
-  {
-    "region": "\u5357\u90e8",
-    "product": "\u8033\u673a",
-    "sales": 73
-  },
-  {
-    "region": "\u5357\u90e8",
-    "product": "\u624b\u8868",
-    "sales": 57
-  },
-  {
-    "region": "\u5357\u90e8",
-    "product": "\u76f8\u673a",
-    "sales": 54
-  },
-  {
-    "region": "\u5357\u90e8",
-    "product": "\u6e38\u620f\u673a",
-    "sales": 45
-  },
-  {
-    "region": "\u5357\u90e8",
-    "product": "\u97f3\u7bb1",
-    "sales": 22
-  },
-  {
-    "region": "\u5357\u90e8",
-    "product": "\u8def\u7531\u5668",
-    "sales": 19
-  },
-  {
-    "region": "\u5357\u90e8",
-    "product": "\u7535\u89c6",
-    "sales": 26
-  },
-  {
-    "region": "\u4e1c\u90e8",
-    "product": "\u624b\u673a",
-    "sales": 88
-  },
-  {
-    "region": "\u4e1c\u90e8",
-    "product": "\u7535\u8111",
-    "sales": 89
-  },
-  {
-    "region": "\u4e1c\u90e8",
-    "product": "\u5e73\u677f",
-    "sales": 81
-  },
-  {
-    "region": "\u4e1c\u90e8",
-    "product": "\u8033\u673a",
-    "sales": 77
-  },
-  {
-    "region": "\u4e1c\u90e8",
-    "product": "\u624b\u8868",
-    "sales": 55
-  },
-  {
-    "region": "\u4e1c\u90e8",
-    "product": "\u76f8\u673a",
-    "sales": 48
-  },
-  {
-    "region": "\u4e1c\u90e8",
-    "product": "\u6e38\u620f\u673a",
-    "sales": 36
-  },
-  {
-    "region": "\u4e1c\u90e8",
-    "product": "\u97f3\u7bb1",
-    "sales": 46
-  },
-  {
-    "region": "\u4e1c\u90e8",
-    "product": "\u8def\u7531\u5668",
-    "sales": 31
-  },
-  {
-    "region": "\u4e1c\u90e8",
-    "product": "\u7535\u89c6",
-    "sales": 35
-  },
-  {
-    "region": "\u897f\u90e8",
-    "product": "\u624b\u673a",
-    "sales": 98
-  },
-  {
-    "region": "\u897f\u90e8",
-    "product": "\u7535\u8111",
-    "sales": 95
-  },
-  {
-    "region": "\u897f\u90e8",
-    "product": "\u5e73\u677f",
-    "sales": 82
-  },
-  {
-    "region": "\u897f\u90e8",
-    "product": "\u8033\u673a",
-    "sales": 85
-  },
-  {
-    "region": "\u897f\u90e8",
-    "product": "\u624b\u8868",
-    "sales": 75
-  },
-  {
-    "region": "\u897f\u90e8",
-    "product": "\u76f8\u673a",
-    "sales": 52
-  },
-  {
-    "region": "\u897f\u90e8",
-    "product": "\u6e38\u620f\u673a",
-    "sales": 60
-  },
-  {
-    "region": "\u897f\u90e8",
-    "product": "\u97f3\u7bb1",
-    "sales": 50
-  },
-  {
-    "region": "\u897f\u90e8",
-    "product": "\u8def\u7531\u5668",
-    "sales": 36
-  },
-  {
-    "region": "\u897f\u90e8",
-    "product": "\u7535\u89c6",
-    "sales": 40
-  },
-  {
-    "region": "\u4e2d\u90e8",
-    "product": "\u624b\u673a",
-    "sales": 100
-  },
-  {
-    "region": "\u4e2d\u90e8",
-    "product": "\u7535\u8111",
-    "sales": 100
-  },
-  {
-    "region": "\u4e2d\u90e8",
-    "product": "\u5e73\u677f",
-    "sales": 90
-  },
-  {
-    "region": "\u4e2d\u90e8",
-    "product": "\u8033\u673a",
-    "sales": 92
-  },
-  {
-    "region": "\u4e2d\u90e8",
-    "product": "\u624b\u8868",
-    "sales": 71
-  },
-  {
-    "region": "\u4e2d\u90e8",
-    "product": "\u76f8\u673a",
-    "sales": 71
-  },
-  {
-    "region": "\u4e2d\u90e8",
-    "product": "\u6e38\u620f\u673a",
-    "sales": 46
-  },
-  {
-    "region": "\u4e2d\u90e8",
-    "product": "\u97f3\u7bb1",
-    "sales": 50
-  },
-  {
-    "region": "\u4e2d\u90e8",
-    "product": "\u8def\u7531\u5668",
-    "sales": 44
-  },
-  {
-    "region": "\u4e2d\u90e8",
-    "product": "\u7535\u89c6",
-    "sales": 29
-  },
-  {
-    "region": "\u533a\u57df1",
-    "product": "\u624b\u673a",
-    "sales": 95
-  },
-  {
-    "region": "\u533a\u57df1",
-    "product": "\u7535\u8111",
-    "sales": 99
-  },
-  {
-    "region": "\u533a\u57df1",
-    "product": "\u5e73\u677f",
-    "sales": 84
-  },
-  {
-    "region": "\u533a\u57df1",
-    "product": "\u8033\u673a",
-    "sales": 89
-  },
-  {
-    "region": "\u533a\u57df1",
-    "product": "\u624b\u8868",
-    "sales": 85
-  },
-  {
-    "region": "\u533a\u57df1",
-    "product": "\u76f8\u673a",
-    "sales": 65
-  },
-  {
-    "region": "\u533a\u57df1",
-    "product": "\u6e38\u620f\u673a",
-    "sales": 49
-  },
-  {
-    "region": "\u533a\u57df1",
-    "product": "\u97f3\u7bb1",
-    "sales": 58
-  },
-  {
-    "region": "\u533a\u57df1",
-    "product": "\u8def\u7531\u5668",
-    "sales": 36
-  },
-  {
-    "region": "\u533a\u57df1",
-    "product": "\u7535\u89c6",
-    "sales": 31
-  },
-  {
-    "region": "\u533a\u57df2",
-    "product": "\u624b\u673a",
-    "sales": 96
-  },
-  {
-    "region": "\u533a\u57df2",
-    "product": "\u7535\u8111",
-    "sales": 90
-  },
-  {
-    "region": "\u533a\u57df2",
-    "product": "\u5e73\u677f",
-    "sales": 90
-  },
-  {
-    "region": "\u533a\u57df2",
-    "product": "\u8033\u673a",
-    "sales": 88
-  },
-  {
-    "region": "\u533a\u57df2",
-    "product": "\u624b\u8868",
-    "sales": 82
-  },
-  {
-    "region": "\u533a\u57df2",
-    "product": "\u76f8\u673a",
-    "sales": 59
-  },
-  {
-    "region": "\u533a\u57df2",
-    "product": "\u6e38\u620f\u673a",
-    "sales": 45
-  },
-  {
-    "region": "\u533a\u57df2",
-    "product": "\u97f3\u7bb1",
-    "sales": 40
-  },
-  {
-    "region": "\u533a\u57df2",
-    "product": "\u8def\u7531\u5668",
-    "sales": 33
-  },
-  {
-    "region": "\u533a\u57df2",
-    "product": "\u7535\u89c6",
-    "sales": 44
-  },
-  {
-    "region": "\u533a\u57df3",
-    "product": "\u624b\u673a",
-    "sales": 86
-  },
-  {
-    "region": "\u533a\u57df3",
-    "product": "\u7535\u8111",
-    "sales": 93
-  },
-  {
-    "region": "\u533a\u57df3",
-    "product": "\u5e73\u677f",
-    "sales": 79
-  },
-  {
-    "region": "\u533a\u57df3",
-    "product": "\u8033\u673a",
-    "sales": 71
-  },
-  {
-    "region": "\u533a\u57df3",
-    "product": "\u624b\u8868",
-    "sales": 77
-  },
-  {
-    "region": "\u533a\u57df3",
-    "product": "\u76f8\u673a",
-    "sales": 61
-  },
-  {
-    "region": "\u533a\u57df3",
-    "product": "\u6e38\u620f\u673a",
-    "sales": 57
-  },
-  {
-    "region": "\u533a\u57df3",
-    "product": "\u97f3\u7bb1",
-    "sales": 32
-  },
-  {
-    "region": "\u533a\u57df3",
-    "product": "\u8def\u7531\u5668",
-    "sales": 25
-  },
-  {
-    "region": "\u533a\u57df3",
-    "product": "\u7535\u89c6",
-    "sales": 33
-  },
-  {
-    "region": "\u533a\u57df4",
-    "product": "\u624b\u673a",
-    "sales": 74
-  },
-  {
-    "region": "\u533a\u57df4",
-    "product": "\u7535\u8111",
-    "sales": 87
-  },
-  {
-    "region": "\u533a\u57df4",
-    "product": "\u5e73\u677f",
-    "sales": 71
-  },
-  {
-    "region": "\u533a\u57df4",
-    "product": "\u8033\u673a",
-    "sales": 60
-  },
-  {
-    "region": "\u533a\u57df4",
-    "product": "\u624b\u8868",
-    "sales": 58
-  },
-  {
-    "region": "\u533a\u57df4",
-    "product": "\u76f8\u673a",
-    "sales": 44
-  },
-  {
-    "region": "\u533a\u57df4",
-    "product": "\u6e38\u620f\u673a",
-    "sales": 37
-  },
-  {
-    "region": "\u533a\u57df4",
-    "product": "\u97f3\u7bb1",
-    "sales": 27
-  },
-  {
-    "region": "\u533a\u57df4",
-    "product": "\u8def\u7531\u5668",
-    "sales": 22
-  },
-  {
-    "region": "\u533a\u57df4",
-    "product": "\u7535\u89c6",
-    "sales": 22
-  },
-  {
-    "region": "\u533a\u57df5",
-    "product": "\u624b\u673a",
-    "sales": 84
-  },
-  {
-    "region": "\u533a\u57df5",
-    "product": "\u7535\u8111",
-    "sales": 78
-  },
-  {
-    "region": "\u533a\u57df5",
-    "product": "\u5e73\u677f",
-    "sales": 61
-  },
-  {
-    "region": "\u533a\u57df5",
-    "product": "\u8033\u673a",
-    "sales": 54
-  },
-  {
-    "region": "\u533a\u57df5",
-    "product": "\u624b\u8868",
-    "sales": 56
-  },
-  {
-    "region": "\u533a\u57df5",
-    "product": "\u76f8\u673a",
+    "region": "North",
+    "product": "Watch",
     "sales": 38
   },
   {
-    "region": "\u533a\u57df5",
-    "product": "\u6e38\u620f\u673a",
-    "sales": 31
+    "region": "North",
+    "product": "Camera",
+    "sales": 44
   },
   {
-    "region": "\u533a\u57df5",
-    "product": "\u97f3\u7bb1",
-    "sales": 28
+    "region": "North",
+    "product": "Console",
+    "sales": 36
   },
   {
-    "region": "\u533a\u57df5",
-    "product": "\u8def\u7531\u5668",
+    "region": "North",
+    "product": "Speaker",
+    "sales": 12
+  },
+  {
+    "region": "North",
+    "product": "Router",
+    "sales": 10
+  },
+  {
+    "region": "North",
+    "product": "TV",
+    "sales": 10
+  },
+  {
+    "region": "South",
+    "product": "Phone",
+    "sales": 85
+  },
+  {
+    "region": "South",
+    "product": "Computer",
+    "sales": 70
+  },
+  {
+    "region": "South",
+    "product": "Tablet",
+    "sales": 83
+  },
+  {
+    "region": "South",
+    "product": "Headphone",
+    "sales": 59
+  },
+  {
+    "region": "South",
+    "product": "Watch",
+    "sales": 57
+  },
+  {
+    "region": "South",
+    "product": "Camera",
+    "sales": 53
+  },
+  {
+    "region": "South",
+    "product": "Console",
+    "sales": 40
+  },
+  {
+    "region": "South",
+    "product": "Speaker",
+    "sales": 21
+  },
+  {
+    "region": "South",
+    "product": "Router",
+    "sales": 14
+  },
+  {
+    "region": "South",
+    "product": "TV",
+    "sales": 27
+  },
+  {
+    "region": "East",
+    "product": "Phone",
+    "sales": 79
+  },
+  {
+    "region": "East",
+    "product": "Computer",
+    "sales": 90
+  },
+  {
+    "region": "East",
+    "product": "Tablet",
+    "sales": 91
+  },
+  {
+    "region": "East",
+    "product": "Headphone",
+    "sales": 77
+  },
+  {
+    "region": "East",
+    "product": "Watch",
+    "sales": 62
+  },
+  {
+    "region": "East",
+    "product": "Camera",
+    "sales": 63
+  },
+  {
+    "region": "East",
+    "product": "Console",
+    "sales": 48
+  },
+  {
+    "region": "East",
+    "product": "Speaker",
+    "sales": 45
+  },
+  {
+    "region": "East",
+    "product": "Router",
+    "sales": 29
+  },
+  {
+    "region": "East",
+    "product": "TV",
     "sales": 20
   },
   {
-    "region": "\u533a\u57df5",
-    "product": "\u7535\u89c6",
+    "region": "West",
+    "product": "Phone",
+    "sales": 100
+  },
+  {
+    "region": "West",
+    "product": "Computer",
+    "sales": 94
+  },
+  {
+    "region": "West",
+    "product": "Tablet",
+    "sales": 83
+  },
+  {
+    "region": "West",
+    "product": "Headphone",
+    "sales": 89
+  },
+  {
+    "region": "West",
+    "product": "Watch",
+    "sales": 67
+  },
+  {
+    "region": "West",
+    "product": "Camera",
+    "sales": 59
+  },
+  {
+    "region": "West",
+    "product": "Console",
+    "sales": 52
+  },
+  {
+    "region": "West",
+    "product": "Speaker",
+    "sales": 41
+  },
+  {
+    "region": "West",
+    "product": "Router",
+    "sales": 37
+  },
+  {
+    "region": "West",
+    "product": "TV",
+    "sales": 30
+  },
+  {
+    "region": "Central",
+    "product": "Phone",
+    "sales": 93
+  },
+  {
+    "region": "Central",
+    "product": "Computer",
+    "sales": 98
+  },
+  {
+    "region": "Central",
+    "product": "Tablet",
+    "sales": 86
+  },
+  {
+    "region": "Central",
+    "product": "Headphone",
+    "sales": 80
+  },
+  {
+    "region": "Central",
+    "product": "Watch",
+    "sales": 84
+  },
+  {
+    "region": "Central",
+    "product": "Camera",
+    "sales": 62
+  },
+  {
+    "region": "Central",
+    "product": "Console",
+    "sales": 51
+  },
+  {
+    "region": "Central",
+    "product": "Speaker",
+    "sales": 42
+  },
+  {
+    "region": "Central",
+    "product": "Router",
+    "sales": 38
+  },
+  {
+    "region": "Central",
+    "product": "TV",
+    "sales": 41
+  },
+  {
+    "region": "Region1",
+    "product": "Phone",
+    "sales": 100
+  },
+  {
+    "region": "Region1",
+    "product": "Computer",
+    "sales": 95
+  },
+  {
+    "region": "Region1",
+    "product": "Tablet",
+    "sales": 89
+  },
+  {
+    "region": "Region1",
+    "product": "Headphone",
+    "sales": 89
+  },
+  {
+    "region": "Region1",
+    "product": "Watch",
+    "sales": 82
+  },
+  {
+    "region": "Region1",
+    "product": "Camera",
+    "sales": 73
+  },
+  {
+    "region": "Region1",
+    "product": "Console",
+    "sales": 48
+  },
+  {
+    "region": "Region1",
+    "product": "Speaker",
+    "sales": 52
+  },
+  {
+    "region": "Region1",
+    "product": "Router",
+    "sales": 36
+  },
+  {
+    "region": "Region1",
+    "product": "TV",
+    "sales": 46
+  },
+  {
+    "region": "Region2",
+    "product": "Phone",
+    "sales": 88
+  },
+  {
+    "region": "Region2",
+    "product": "Computer",
+    "sales": 100
+  },
+  {
+    "region": "Region2",
+    "product": "Tablet",
+    "sales": 99
+  },
+  {
+    "region": "Region2",
+    "product": "Headphone",
+    "sales": 87
+  },
+  {
+    "region": "Region2",
+    "product": "Watch",
+    "sales": 77
+  },
+  {
+    "region": "Region2",
+    "product": "Camera",
+    "sales": 63
+  },
+  {
+    "region": "Region2",
+    "product": "Console",
+    "sales": 52
+  },
+  {
+    "region": "Region2",
+    "product": "Speaker",
+    "sales": 38
+  },
+  {
+    "region": "Region2",
+    "product": "Router",
+    "sales": 41
+  },
+  {
+    "region": "Region2",
+    "product": "TV",
+    "sales": 30
+  },
+  {
+    "region": "Region3",
+    "product": "Phone",
+    "sales": 98
+  },
+  {
+    "region": "Region3",
+    "product": "Computer",
+    "sales": 85
+  },
+  {
+    "region": "Region3",
+    "product": "Tablet",
+    "sales": 88
+  },
+  {
+    "region": "Region3",
+    "product": "Headphone",
+    "sales": 78
+  },
+  {
+    "region": "Region3",
+    "product": "Watch",
+    "sales": 64
+  },
+  {
+    "region": "Region3",
+    "product": "Camera",
+    "sales": 60
+  },
+  {
+    "region": "Region3",
+    "product": "Console",
+    "sales": 58
+  },
+  {
+    "region": "Region3",
+    "product": "Speaker",
+    "sales": 35
+  },
+  {
+    "region": "Region3",
+    "product": "Router",
+    "sales": 41
+  },
+  {
+    "region": "Region3",
+    "product": "TV",
+    "sales": 30
+  },
+  {
+    "region": "Region4",
+    "product": "Phone",
+    "sales": 87
+  },
+  {
+    "region": "Region4",
+    "product": "Computer",
+    "sales": 90
+  },
+  {
+    "region": "Region4",
+    "product": "Tablet",
+    "sales": 74
+  },
+  {
+    "region": "Region4",
+    "product": "Headphone",
+    "sales": 74
+  },
+  {
+    "region": "Region4",
+    "product": "Watch",
+    "sales": 67
+  },
+  {
+    "region": "Region4",
+    "product": "Camera",
+    "sales": 45
+  },
+  {
+    "region": "Region4",
+    "product": "Console",
+    "sales": 33
+  },
+  {
+    "region": "Region4",
+    "product": "Speaker",
+    "sales": 28
+  },
+  {
+    "region": "Region4",
+    "product": "Router",
+    "sales": 25
+  },
+  {
+    "region": "Region4",
+    "product": "TV",
+    "sales": 33
+  },
+  {
+    "region": "Region5",
+    "product": "Phone",
+    "sales": 76
+  },
+  {
+    "region": "Region5",
+    "product": "Computer",
+    "sales": 64
+  },
+  {
+    "region": "Region5",
+    "product": "Tablet",
+    "sales": 76
+  },
+  {
+    "region": "Region5",
+    "product": "Headphone",
+    "sales": 53
+  },
+  {
+    "region": "Region5",
+    "product": "Watch",
+    "sales": 44
+  },
+  {
+    "region": "Region5",
+    "product": "Camera",
+    "sales": 51
+  },
+  {
+    "region": "Region5",
+    "product": "Console",
+    "sales": 40
+  },
+  {
+    "region": "Region5",
+    "product": "Speaker",
+    "sales": 18
+  },
+  {
+    "region": "Region5",
+    "product": "Router",
     "sales": 13
+  },
+  {
+    "region": "Region5",
+    "product": "TV",
+    "sales": 14
   }
 ]
