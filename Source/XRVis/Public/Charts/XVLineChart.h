@@ -49,6 +49,25 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Set3DLineChart(ELineChartStyle InLineChartStyle, FColor LineChartColor);
 
+	/**
+	 * 应用参考值高亮到线图
+	 */
+	virtual void ApplyReferenceHighlight() override;
+	
+	/**
+	 * 应用统计轴线到线图
+	 */
+	virtual void ApplyStatisticalLines() override;
+	
+	/**
+	 * 获取所有数据值
+	 */
+	virtual TArray<float> GetAllDataValues() const override;
+	
+	/**
+	 * 创建一条统计轴线
+	 */
+	void CreateStatisticalLine(const FXVStatisticalLine& LineInfo);
 	
 protected:
 	// Called when the game starts or when spawned
@@ -109,6 +128,7 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category = "Chart Property | Style")
 	ELineChartStyle LineChartStyle;
+
 private:
 
 	UPROPERTY(VisibleDefaultsOnly,Category = "Chart Property | Material", meta=(AllowPrivateAccess = true))
@@ -126,5 +146,11 @@ private:
 
 	int HoveredIndex = -1;
 
+	// 统计轴线相关
+	UPROPERTY()
+	TArray<UProceduralMeshComponent*> StatisticalLineMeshes;
+	
+	UPROPERTY()
+	TArray<UTextRenderComponent*> StatisticalLineLabels;
 	
 };

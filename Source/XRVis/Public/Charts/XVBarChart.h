@@ -110,6 +110,26 @@ public:
 
 	virtual void GenerateAllMeshInfo() override;
 	
+	/**
+	 * 应用参考值高亮到柱状图
+	 */
+	virtual void ApplyReferenceHighlight() override;
+	
+	/**
+	 * 应用统计轴线到柱状图
+	 */
+	virtual void ApplyStatisticalLines() override;
+	
+	/**
+	 * 获取所有数据值
+	 */
+	virtual TArray<float> GetAllDataValues() const override;
+	
+	/**
+	 * 创建一条统计轴线
+	 */
+	void CreateStatisticalLine(const FXVStatisticalLine& LineInfo);
+	
 private:
 	
 	TMap<int, TMap<int, float>> XYZs;
@@ -140,5 +160,12 @@ private:
 
 	UPROPERTY(EditAnywhere, Category="Chart Property | Bar", meta=(AllowPrivateAccess = true, ClampMin="0", ToolTip="柱体长度"))
 	int Length;
+
+	// 统计轴线相关
+	UPROPERTY()
+	TArray<UProceduralMeshComponent*> StatisticalLineMeshes;
+	
+	UPROPERTY()
+	TArray<UTextRenderComponent*> StatisticalLineLabels;
 
 };

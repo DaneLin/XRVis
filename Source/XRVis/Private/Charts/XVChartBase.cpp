@@ -30,6 +30,15 @@ AXVChartBase::AXVChartBase()
 	EmissiveIntensity = 10.f;
 	EmissiveColor = FColor::White;
 
+	// 初始化参考值相关属性
+	ReferenceValue = 0.0f;
+	ReferenceHighlightColor = FColor::Yellow;
+	ReferenceComparisonType = EReferenceComparisonType::Greater;
+	bEnableReferenceHighlight = false;
+
+	// 初始化统计轴线相关属性
+	bEnableStatisticalLines = false;
+
 	bAnimationFinished = false;
 	CurrentBuildTime = 0.f;
 	BuildTime = 1.5f;
@@ -163,6 +172,18 @@ void AXVChartBase::BeginPlay()
 		LoadDataFromFile(DataFilePath);
 	}
 	
+	// 如果启用了参考值高亮，应用高亮效果
+	if (bEnableReferenceHighlight)
+	{
+		ApplyReferenceHighlight();
+	}
+	
+	// 如果启用了统计轴线，应用统计轴线
+	if (bEnableStatisticalLines)
+	{
+		UpdateStatisticalLineValues();
+		ApplyStatisticalLines();
+	}
 }
 
 void AXVChartBase::BackupVertices()
@@ -211,8 +232,9 @@ bool AXVChartBase::LoadDataFromFile(const FString& FilePath)
 	
 	if (!ChartDataManager)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 数据管理器未初始化"));
-		return false;
+		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 数据管理器未初始化,现在进行初始化"));
+		ChartDataManager = NewObject<UXVDataManager>(this, TEXT("ChartDataManager"));
+
 	}
 	
 	// 保存当前文件路径
@@ -517,8 +539,29 @@ void AXVChartBase::SetValueFromNamedData(const TArray<TSharedPtr<FJsonObject>>& 
     // 转换为排序数组
     TArray<FString> SortedXValues = UniqueXValues.Array();
     TArray<FString> SortedYValues = UniqueYValues.Array();
-    SortedXValues.Sort();
-    SortedYValues.Sort();
+    
+    // 自定义排序逻辑：如果是纯数字则按照数值排序，否则按照字符串排序
+    auto NumericSort = [](const FString& A, const FString& B) -> bool {
+        // 检查是否都是数字
+        bool bAIsNumeric = true;
+        bool bBIsNumeric = true;
+        double ANumeric = 0.0;
+        double BNumeric = 0.0;
+        
+        // 尝试将字符串转换为数字
+        if (A.IsNumeric() && B.IsNumeric()) {
+            ANumeric = FCString::Atod(*A);
+            BNumeric = FCString::Atod(*B);
+            // 按数值排序
+            return ANumeric < BNumeric;
+        }
+        // 否则使用默认的字符串排序
+        return A < B;
+    };
+    
+    // 使用自定义排序逻辑
+    SortedXValues.Sort(NumericSort);
+    SortedYValues.Sort(NumericSort);
     
     // 创建映射字典
     TMap<FString, int32> XValueToIndex;
@@ -853,4 +896,232 @@ FVector AXVChartBase::GetCursorHitRowAndColAndHeight(const FHitResult& HitResult
 	}
 	
 	return FVector::ZeroVector;
+}
+
+void AXVChartBase::ApplyReferenceHighlight()
+{
+	// 基类实现为空，由子类具体实现
+}
+
+void AXVChartBase::SetReferenceValue(float InReferenceValue)
+{
+	ReferenceValue = InReferenceValue;
+	
+	// 如果启用了参考值高亮，则应用高亮
+	if (bEnableReferenceHighlight)
+	{
+		ApplyReferenceHighlight();
+	}
+}
+
+void AXVChartBase::SetReferenceComparisonType(TEnumAsByte<enum EReferenceComparisonType> InComparisonType)
+{
+	ReferenceComparisonType = InComparisonType;
+	
+	// 如果启用了参考值高亮，则应用高亮
+	if (bEnableReferenceHighlight)
+	{
+		ApplyReferenceHighlight();
+	}
+}
+
+bool AXVChartBase::CheckAgainstReference(float ValueToCheck) const
+{
+	switch (ReferenceComparisonType.GetValue())
+	{
+	case EReferenceComparisonType::Greater:
+		return ValueToCheck > ReferenceValue;
+	case EReferenceComparisonType::Less:
+		return ValueToCheck < ReferenceValue;
+	case EReferenceComparisonType::Equal:
+		return FMath::IsNearlyEqual(ValueToCheck, ReferenceValue);
+	case EReferenceComparisonType::GreaterOrEqual:
+		return ValueToCheck >= ReferenceValue;
+	case EReferenceComparisonType::LessOrEqual:
+		return ValueToCheck <= ReferenceValue;
+	case EReferenceComparisonType::NotEqual:
+		return !FMath::IsNearlyEqual(ValueToCheck, ReferenceValue);
+	default:
+		return false;
+	}
+}
+
+void AXVChartBase::SetEnableReferenceHighlight(bool bEnable)
+{
+	bEnableReferenceHighlight = bEnable;
+	
+	// 根据新的启用状态应用或清除高亮
+	if (bEnableReferenceHighlight)
+	{
+		ApplyReferenceHighlight();
+	}
+	else
+	{
+		// 禁用高亮时，恢复所有区域的默认颜色
+		for (int32 i = 0; i < DynamicMaterialInstances.Num(); i++)
+		{
+			if (DynamicMaterialInstances[i])
+			{
+				DynamicMaterialInstances[i]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
+				DynamicMaterialInstances[i]->SetScalarParameterValue("EmissiveIntensity", 0);
+				UpdateMeshSection(i);
+			}
+		}
+	}
+}
+
+void AXVChartBase::SetReferenceHighlightColor(FLinearColor InColor)
+{
+	ReferenceHighlightColor = InColor;
+	
+	// 如果启用了参考值高亮，更新高亮颜色
+	if (bEnableReferenceHighlight)
+	{
+		ApplyReferenceHighlight();
+	}
+}
+
+void AXVChartBase::UpdateStatisticalLineValues()
+{
+	// 更新每条统计轴线的实际值
+	for (auto& Line : StatisticalLines)
+	{
+		switch (Line.LineType)
+		{
+		case EStatisticalLineType::Mean:
+			Line.ActualValue = CalculateMean();
+			break;
+		case EStatisticalLineType::Median:
+			Line.ActualValue = CalculateMedian();
+			break;
+		case EStatisticalLineType::Max:
+			Line.ActualValue = CalculateMax();
+			break;
+		case EStatisticalLineType::Min:
+			Line.ActualValue = CalculateMin();
+			break;
+		case EStatisticalLineType::Custom:
+			Line.ActualValue = Line.CustomValue;
+			break;
+		default:
+			Line.ActualValue = 0.0f;
+			break;
+		}
+	}
+}
+
+void AXVChartBase::ApplyStatisticalLines()
+{
+	// 基类实现为空，由子类具体实现绘制逻辑
+}
+
+int32 AXVChartBase::AddStatisticalLine(EStatisticalLineType LineType, FLinearColor LineColor, float CustomValue)
+{
+	FXVStatisticalLine NewLine;
+	NewLine.LineType = LineType;
+	NewLine.LineColor = LineColor;
+	NewLine.CustomValue = CustomValue;
+	
+	// 设置默认标签格式
+	switch (LineType)
+	{
+	case EStatisticalLineType::Mean:
+		NewLine.LabelFormat = TEXT("平均值: {value}");
+		break;
+	case EStatisticalLineType::Median:
+		NewLine.LabelFormat = TEXT("中位数: {value}");
+		break;
+	case EStatisticalLineType::Max:
+		NewLine.LabelFormat = TEXT("最大值: {value}");
+		break;
+	case EStatisticalLineType::Min:
+		NewLine.LabelFormat = TEXT("最小值: {value}");
+		break;
+	case EStatisticalLineType::Custom:
+		NewLine.LabelFormat = TEXT("自定义值: {value}");
+		break;
+	default:
+		break;
+	}
+	
+	// 添加到数组并返回索引
+	return StatisticalLines.Add(NewLine);
+}
+
+void AXVChartBase::RemoveStatisticalLine(int32 Index)
+{
+	if (StatisticalLines.IsValidIndex(Index))
+	{
+		StatisticalLines.RemoveAt(Index);
+	}
+}
+
+float AXVChartBase::CalculateMean() const
+{
+	TArray<float> Values = GetAllDataValues();
+	if (Values.Num() == 0)
+	{
+		return 0.0f;
+	}
+	
+	float Sum = 0.0f;
+	for (float Value : Values)
+	{
+		Sum += Value;
+	}
+	
+	return Sum / Values.Num();
+}
+
+float AXVChartBase::CalculateMedian() const
+{
+	TArray<float> Values = GetAllDataValues();
+	if (Values.Num() == 0)
+	{
+		return 0.0f;
+	}
+	
+	// 排序数组
+	Values.Sort();
+	
+	// 计算中位数
+	if (Values.Num() % 2 == 0)
+	{
+		// 偶数个元素，取中间两个值的平均
+		int32 MiddleIndex = Values.Num() / 2;
+		return (Values[MiddleIndex - 1] + Values[MiddleIndex]) / 2.0f;
+	}
+	else
+	{
+		// 奇数个元素，直接返回中间值
+		return Values[Values.Num() / 2];
+	}
+}
+
+float AXVChartBase::CalculateMax() const
+{
+	TArray<float> Values = GetAllDataValues();
+	if (Values.Num() == 0)
+	{
+		return 0.0f;
+	}
+	
+	return FMath::Max(Values);
+}
+
+float AXVChartBase::CalculateMin() const
+{
+	TArray<float> Values = GetAllDataValues();
+	if (Values.Num() == 0)
+	{
+		return 0.0f;
+	}
+	
+	return FMath::Min(Values);
+}
+
+TArray<float> AXVChartBase::GetAllDataValues() const
+{
+	// 基类中返回空数组，由子类具体实现
+	return TArray<float>();
 }

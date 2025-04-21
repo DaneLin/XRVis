@@ -45,7 +45,10 @@ AXVBarChart::AXVBarChart()
 	Colors.Add((FColor::FromHex("#a50026")));
 	
 	XVChartUtils::LoadResourceFromPath(TEXT("Material'/XRVis/Materials/M_BaseVertexColor.M_BaseVertexColor'"), BaseMaterial);
-		
+	
+	// 初始化统计轴线相关数组
+	StatisticalLineMeshes.Empty();
+	StatisticalLineLabels.Empty();
 }
 
 // Called when the game starts or when spawned
@@ -63,17 +66,28 @@ void AXVBarChart::BeginPlay()
 			ChartAxis->SetXAxisText(XTextArrs);
 			ChartAxis->SetYAxisText(YTextArrs);
 			ChartAxis->SetZAxisText(ZTextArrs);
-			ChartAxis->SetAxisGridNum(XAxisLabels.Num(), YAxisLabels.Num(),5);
+			if (bEnableGPU)
+			{
+				ChartAxis->SetAxisGridNum(XAxisLabels.Num(), YAxisLabels.Num(),std::max(5, int(MaxZ/ChartAxis->zAxisInterval)));
+			}
 		}
 	}
 
 	if (bAutoLoadData && bEnableGPU)
 	{
-		FXRVisBoxGeometryParams Params;
-		Params.RowCount = XAxisLabels.Num();
-		Params.ColumnCount = YAxisLabels.Num();
-		Params.HeightValues = HeightValues;
-		static_cast<FXRVisBoxGeometryGenerator*>(GeometryGenerator)->SetParameters(Params);
+		if(!HeightValues.IsEmpty() && HeightValues.Num() == XAxisLabels.Num() * YAxisLabels.Num())
+		{
+			FXRVisBoxGeometryParams Params;
+			Params.RowCount = XAxisLabels.Num();
+			Params.ColumnCount = YAxisLabels.Num();
+			Params.HeightValues = HeightValues;
+			static_cast<FXRVisBoxGeometryGenerator*>(GeometryGenerator)->SetParameters(Params);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No vaild height value array or row and column counts not equal to height value counts"));
+		}
+		
 	}
 }
 
@@ -265,6 +279,19 @@ void AXVBarChart::GenerateAllMeshInfo()
 			}
 		}
 	}
+	
+	// 如果启用了参考值高亮，应用高亮效果
+	if (bEnableReferenceHighlight)
+	{
+		ApplyReferenceHighlight();
+	}
+	
+	// 如果启用了统计轴线，应用统计轴线
+	if (bEnableStatisticalLines)
+	{
+		UpdateStatisticalLineValues();
+		ApplyStatisticalLines();
+	}
 }
 
 void AXVBarChart::ConstructMesh(double Rate)
@@ -341,4 +368,212 @@ void AXVBarChart::UpdateOnMouseEnterOrLeft()
 			HoveredIndex = -1;
 		}
 	}
+}
+
+// 添加ApplyReferenceHighlight方法实现
+void AXVBarChart::ApplyReferenceHighlight()
+{
+	if (!bEnableReferenceHighlight || TotalCountOfValue == 0)
+	{
+		return;
+	}
+
+	// 遍历所有柱子，检查是否符合参考值条件
+	size_t CurrentIndex = 0;
+	for (size_t IndexOfY = 0; IndexOfY < RowCounts; IndexOfY++)
+	{
+		for (size_t IndexOfX = 0; IndexOfX < XYZs[IndexOfY].Num(); IndexOfX++)
+		{
+			float Value = XYZs[IndexOfY][IndexOfX];
+			
+			// 检查值是否符合参考值条件
+			bool bMatchesReference = CheckAgainstReference(Value);
+			
+			if (bMatchesReference)
+			{
+				// 符合条件，应用高亮颜色和发光效果
+				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", ReferenceHighlightColor);
+				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue("EmissiveIntensity", EmissiveIntensity);
+			}
+			else
+			{
+				// 不符合条件，恢复默认颜色和发光效果
+				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
+				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue("EmissiveIntensity", 0);
+			}
+			
+			// 更新网格部分
+			UpdateMeshSection(CurrentIndex);
+			
+			CurrentIndex++;
+		}
+	}
+}
+
+// 应用统计轴线到柱状图
+void AXVBarChart::ApplyStatisticalLines()
+{
+	// 清除现有的统计轴线
+	for (auto* Mesh : StatisticalLineMeshes)
+	{
+		if (Mesh)
+		{
+			Mesh->DestroyComponent();
+		}
+	}
+	StatisticalLineMeshes.Empty();
+	
+	for (auto* Label : StatisticalLineLabels)
+	{
+		if (Label)
+		{
+			Label->DestroyComponent();
+		}
+	}
+	StatisticalLineLabels.Empty();
+	
+	if (!bEnableStatisticalLines || StatisticalLines.Num() == 0)
+	{
+		return;
+	}
+	
+	// 计算图表的总宽度和高度
+	float ChartWidth = MaxX * XAxisInterval;
+	float ChartHeight = MaxY * YAxisInterval;
+	
+	// 为每条统计轴线创建可视化效果
+	for (const auto& Line : StatisticalLines)
+	{
+		CreateStatisticalLine(Line);
+	}
+}
+
+// 获取所有数据值
+TArray<float> AXVBarChart::GetAllDataValues() const
+{
+	TArray<float> Values;
+	
+	// 收集所有Z值（高度值）
+	for (const auto& Row : XYZs)
+	{
+		for (const auto& Item : Row.Value)
+		{
+			Values.Add(Item.Value);
+		}
+	}
+	
+	return Values;
+}
+
+// 创建一条统计轴线
+void AXVBarChart::CreateStatisticalLine(const FXVStatisticalLine& LineInfo)
+{
+	if (LineInfo.LineType == EStatisticalLineType::None || LineInfo.ActualValue <= 0)
+	{
+		return;
+	}
+	
+	// 创建一个新的程序化网格组件用于绘制轴线
+	UProceduralMeshComponent* LineMesh = NewObject<UProceduralMeshComponent>(this);
+	LineMesh->SetupAttachment(RootComponent);
+	LineMesh->RegisterComponent();
+	
+	// 计算轴线位置
+	float LineHeight = LineInfo.ActualValue;
+	float ChartWidth = (MaxX + 1) * XAxisInterval;
+	float ChartLength = (MaxY + 1) * YAxisInterval;
+	
+	// 创建轴线几何体
+	TArray<FVector> Vertices;
+	TArray<int32> Triangles;
+	TArray<FVector> Normals;
+	TArray<FVector2D> UV0;
+	TArray<FLinearColor> VertexColors;
+	TArray<FProcMeshTangent> Tangents;
+	
+	// 轴线的厚度
+	float LineThickness = LineInfo.LineWidth;
+	
+	// 创建一个水平平面作为轴线
+	Vertices.Add(FVector(0, 0, LineHeight));
+	Vertices.Add(FVector(ChartWidth, 0, LineHeight));
+	Vertices.Add(FVector(ChartWidth, ChartLength, LineHeight));
+	Vertices.Add(FVector(0, ChartLength, LineHeight));
+	
+	Vertices.Add(FVector(0, 0, LineHeight + LineThickness));
+	Vertices.Add(FVector(ChartWidth, 0, LineHeight + LineThickness));
+	Vertices.Add(FVector(ChartWidth, ChartLength, LineHeight + LineThickness));
+	Vertices.Add(FVector(0, ChartLength, LineHeight + LineThickness));
+	
+	// 添加三角形（两个面）
+	// 底面
+	Triangles.Add(0); Triangles.Add(1); Triangles.Add(2);
+	Triangles.Add(0); Triangles.Add(2); Triangles.Add(3);
+	
+	// 顶面
+	Triangles.Add(4); Triangles.Add(6); Triangles.Add(5);
+	Triangles.Add(4); Triangles.Add(7); Triangles.Add(6);
+	
+	// 侧面1
+	Triangles.Add(0); Triangles.Add(4); Triangles.Add(1);
+	Triangles.Add(1); Triangles.Add(4); Triangles.Add(5);
+	
+	// 侧面2
+	Triangles.Add(1); Triangles.Add(5); Triangles.Add(2);
+	Triangles.Add(2); Triangles.Add(5); Triangles.Add(6);
+	
+	// 侧面3
+	Triangles.Add(2); Triangles.Add(6); Triangles.Add(3);
+	Triangles.Add(3); Triangles.Add(6); Triangles.Add(7);
+	
+	// 侧面4
+	Triangles.Add(3); Triangles.Add(7); Triangles.Add(0);
+	Triangles.Add(0); Triangles.Add(7); Triangles.Add(4);
+	
+	// 设置法线、UV和颜色
+	for (int32 i = 0; i < Vertices.Num(); ++i)
+	{
+		Normals.Add(FVector(0, 0, 1));
+		UV0.Add(FVector2D(0, 0));
+		VertexColors.Add(LineInfo.LineColor);
+		Tangents.Add(FProcMeshTangent(1, 0, 0));
+	}
+	
+	// 创建网格
+	LineMesh->CreateMeshSection_LinearColor(0, Vertices, Triangles, Normals, UV0, VertexColors, Tangents, true);
+	
+	// 创建材质实例
+	UMaterialInstanceDynamic* LineMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+	LineMaterial->SetVectorParameterValue("EmissiveColor", LineInfo.LineColor);
+	LineMaterial->SetScalarParameterValue("EmissiveIntensity", 1.0f);
+	LineMesh->SetMaterial(0, LineMaterial);
+	
+	// 如果需要标签，则创建文本组件
+	if (LineInfo.bShowLabel)
+	{
+		UTextRenderComponent* Label = NewObject<UTextRenderComponent>(this);
+		Label->SetupAttachment(RootComponent);
+		Label->RegisterComponent();
+		
+		// 设置标签文本
+		FString LabelText = LineInfo.LabelFormat;
+		LabelText = LabelText.Replace(TEXT("{value}"), *FString::Printf(TEXT("%.2f"), LineInfo.ActualValue));
+		Label->SetText(FText::FromString(LabelText));
+		
+		// 设置标签外观
+		Label->SetTextRenderColor(LineInfo.LineColor.ToFColor(true));
+		Label->SetWorldSize(10.0f);  // 设置文本大小
+		Label->SetHorizontalAlignment(EHorizTextAligment::EHTA_Left);
+		Label->SetVerticalAlignment(EVerticalTextAligment::EVRTA_TextBottom);
+		
+		// 设置标签位置
+		Label->SetWorldLocation(FVector(0, ChartLength * 0.5f, LineHeight + LineThickness + 1.0f));
+		Label->SetWorldRotation(FRotator(90.0f, 0.0f, 90.0f));  // 使文本朝向正确
+		
+		// 保存标签组件
+		StatisticalLineLabels.Add(Label);
+	}
+	
+	// 保存轴线网格组件
+	StatisticalLineMeshes.Add(LineMesh);
 }
