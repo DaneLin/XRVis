@@ -38,6 +38,13 @@ AXVChartBase::AXVChartBase()
 
 	// 初始化统计轴线相关属性
 	bEnableStatisticalLines = false;
+	
+	// 初始化Z轴控制相关属性
+	bForceZeroBase = true;
+	MinZAxisValue = 0.0f;
+	ZAxisScale = 1.0f;
+	bAutoAdjustZAxis = false;
+	ZAxisMarginPercent = 0.1f;
 
 	bAnimationFinished = false;
 	CurrentBuildTime = 0.f;
@@ -1124,4 +1131,90 @@ TArray<float> AXVChartBase::GetAllDataValues() const
 {
 	// 基类中返回空数组，由子类具体实现
 	return TArray<float>();
+}
+
+void AXVChartBase::SetZAxisRange(bool bFromZero, float MinValue)
+{
+	bForceZeroBase = bFromZero;
+	MinZAxisValue = bFromZero ? 0.0f : MinValue;
+	
+	// 重新构建图表以应用新设置
+	if (TotalCountOfValue > 0)
+	{
+		ConstructMesh(1.0f);
+	}
+}
+
+void AXVChartBase::SetZAxisScale(float Scale)
+{
+	ZAxisScale = FMath::Clamp(Scale, 0.1f, 10.0f);
+	
+	// 重新构建图表以应用新设置
+	if (TotalCountOfValue > 0)
+	{
+		ConstructMesh(1.0f);
+	}
+}
+
+void AXVChartBase::AutoAdjustZAxis(float MarginPercent)
+{
+	ZAxisMarginPercent = FMath::Clamp(MarginPercent, 0.0f, 0.5f);
+	bAutoAdjustZAxis = true;
+	
+	// 获取所有数据值
+	TArray<float> Values = GetAllDataValues();
+	if (Values.Num() == 0)
+	{
+		return;
+	}
+	
+	// 计算数据范围
+	float MinVal = FMath::Min(Values);
+	float MaxVal = FMath::Max(Values);
+	
+	// 如果最小值和最大值几乎相等，则进行特殊处理
+	if (FMath::IsNearlyEqual(MinVal, MaxVal, 0.001f))
+	{
+		// 数据基本没有波动，创建一个人工范围
+		MinVal = MaxVal * 0.9f;
+	}
+	
+	// 计算范围和边距
+	float Range = MaxVal - MinVal;
+	float Margin = Range * ZAxisMarginPercent;
+	
+	// 设置Z轴范围，考虑边距
+	MinZAxisValue = MinVal - Margin;
+	
+	// 如果最小值接近0或小于0，则从0开始
+	if (MinZAxisValue <= 0.01f * MaxVal)
+	{
+		bForceZeroBase = true;
+		MinZAxisValue = 0.0f;
+	}
+	else
+	{
+		bForceZeroBase = false;
+	}
+	
+	// 重新构建图表以应用新设置
+	if (TotalCountOfValue > 0)
+	{
+		ConstructMesh(1.0f);
+	}
+}
+
+float AXVChartBase::CalculateAdjustedHeight(float RawHeight) const
+{
+	// 如果强制从0开始，则直接应用缩放
+	if (bForceZeroBase || RawHeight <= 0.0f)
+	{
+		return RawHeight * ZAxisScale;
+	}
+	
+	// 否则，从MinZAxisValue开始计算相对高度
+	float AdjustedHeight = (RawHeight - MinZAxisValue) * ZAxisScale;
+	
+	// 确保高度不为负
+	return FMath::Max(0.1f, AdjustedHeight);
 }

@@ -194,6 +194,12 @@ void AXVLineChart::BeginPlay()
 			ChartAxis->SetZAxisText(ZText);
 		}
 	}
+	
+	// Z轴自动调整已移至GenerateAllMeshInfo方法中，确保只在数据加载完成后才进行调整
+	// if (bAutoAdjustZAxis)
+	// {
+	// 	AutoAdjustZAxis(ZAxisMarginPercent);
+	// }
 }
 
 // Called every frame
@@ -319,6 +325,13 @@ void AXVLineChart::GenerateAllMeshInfo()
 	{
 		return;
 	}
+	
+	// 如果启用了自动调整Z轴，先进行自动调整
+	if (bAutoAdjustZAxis)
+	{
+		AutoAdjustZAxis(ZAxisMarginPercent);
+	}
+	
 	PrepareMeshSections();
 	
 	int CurrentIndex = 0;
@@ -332,23 +345,30 @@ void AXVLineChart::GenerateAllMeshInfo()
 
 			int NewIndexOfX = FMath::Min(CurrentRolCounts - 1, IndexOfX + 1);
 
-			float Height = XYZs[IndexOfY][IndexOfX];
-			float NextHeight = XYZs[IndexOfY][NewIndexOfX];
-			SectionsHeight[CurrentIndex] = FMath::Max(Height,NextHeight);
+			// 获取原始高度
+			float RawHeight = XYZs[IndexOfY][IndexOfX];
+			float RawNextHeight = XYZs[IndexOfY][NewIndexOfX];
+			
+			// 应用Z轴调整
+			float AdjustedHeight = CalculateAdjustedHeight(RawHeight);
+			float AdjustedNextHeight = CalculateAdjustedHeight(RawNextHeight);
+			
+			SectionsHeight[CurrentIndex] = FMath::Max(AdjustedHeight, AdjustedNextHeight);
 
 			if(LineChartStyle != ELineChartStyle::Point)
 			{
-				XVChartUtils::CreateBox(SectionInfos, CurrentIndex, Position, YAxisInterval, Width, Height , NextHeight, Colors[IndexOfY % Colors.Num()]);
+				XVChartUtils::CreateBox(SectionInfos, CurrentIndex, Position, YAxisInterval, Width, AdjustedHeight, AdjustedNextHeight, Colors[IndexOfY % Colors.Num()]);
 			}
 			else
 			{
-				XVChartUtils::CreateSphere(SectionInfos, CurrentIndex, Position + FVector(0,0,Height), SphereRadius, NumSphereSlices, NumSphereStacks, Colors[IndexOfY % Colors.Num()]);
+				XVChartUtils::CreateSphere(SectionInfos, CurrentIndex, Position + FVector(0, 0, AdjustedHeight), SphereRadius, NumSphereSlices, NumSphereStacks, Colors[IndexOfY % Colors.Num()]);
 			}
 			DynamicMaterialInstances[CurrentIndex] = UMaterialInstanceDynamic::Create(BaseMaterial, this);
 			DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(TEXT("EmissiveColor"), EmissiveColor);
 			ProceduralMeshComponent->SetMaterial(CurrentIndex, DynamicMaterialInstances[CurrentIndex]);
-			// Create Text Component
-			LabelComponents[CurrentIndex] = XVChartUtils::CreateTextRenderComponent(this,UKismetTextLibrary::Conv_IntToText(SectionsHeight[CurrentIndex]),FColor::Cyan, false );
+			
+			// 使用原始高度值作为标签文本
+			LabelComponents[CurrentIndex] = XVChartUtils::CreateTextRenderComponent(this, FText::FromString(FString::Printf(TEXT("%.2f"), RawHeight)), FColor::Cyan, false);
 			
 			CurrentIndex++;
 		}
@@ -413,10 +433,11 @@ void AXVLineChart::ApplyReferenceHighlight()
 		const auto& Row = XYZs[RowIndex];
 		for (const auto& XZPair : Row)
 		{
-			int Value = XZPair.Value; // Z值
+			// 使用原始高度值进行比较，而不是调整后的高度
+			int RawValue = XZPair.Value; // Z值
 			
 			// 检查值是否符合参考值条件
-			bool bMatchesReference = CheckAgainstReference(Value);
+			bool bMatchesReference = CheckAgainstReference(RawValue);
 			
 			if (bMatchesReference)
 			{
@@ -507,8 +528,9 @@ void AXVLineChart::CreateStatisticalLine(const FXVStatisticalLine& LineInfo)
 	LineMesh->SetupAttachment(RootComponent);
 	LineMesh->RegisterComponent();
 	
-	// 计算轴线位置
-	float LineHeight = LineInfo.ActualValue;
+	// 计算轴线位置 - 使用调整后的高度
+	float RawLineHeight = LineInfo.ActualValue;
+	float LineHeight = CalculateAdjustedHeight(RawLineHeight);
 	float ChartWidth = (MaxX + 1) * XAxisInterval;
 	float ChartLength = (MaxY + 1) * YAxisInterval;
 	
@@ -584,9 +606,9 @@ void AXVLineChart::CreateStatisticalLine(const FXVStatisticalLine& LineInfo)
 		Label->SetupAttachment(RootComponent);
 		Label->RegisterComponent();
 		
-		// 设置标签文本
+		// 设置标签文本 - 显示原始值，而非调整后的高度
 		FString LabelText = LineInfo.LabelFormat;
-		LabelText = LabelText.Replace(TEXT("{value}"), *FString::Printf(TEXT("%.2f"), LineInfo.ActualValue));
+		LabelText = LabelText.Replace(TEXT("{value}"), *FString::Printf(TEXT("%.2f"), RawLineHeight));
 		Label->SetText(FText::FromString(LabelText));
 		
 		// 设置标签外观

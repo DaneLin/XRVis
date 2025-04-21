@@ -5,7 +5,10 @@
 #include "ProceduralMeshComponent.h"
 #include "XVChartUtils.h"
 #include "DataProcessing/XVDataManager.h"
+#include "Rendering/XRVisGeometryRenderer.h"
 #include "XVChartBase.generated.h"
+
+class FXRVisSceneViewExtension;
 
 UENUM(BlueprintType)
 enum EReferenceComparisonType
@@ -139,6 +142,26 @@ public:
 	/* 是否自动加载数据 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | Data", meta=(ToolTip="是否自动加载数据"))
 	bool bAutoLoadData;
+
+	/* Z轴控制 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis", meta=(ToolTip="是否强制Z轴从0开始"))
+	bool bForceZeroBase = true;
+
+	/* Z轴最小值(仅当不强制从0开始时生效) */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis", meta=(ToolTip="Z轴最小值(仅当不强制从0开始时生效)", EditCondition="!bForceZeroBase"))
+	float MinZAxisValue = 0.0f;
+
+	/* Z轴缩放比例 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis", meta=(ToolTip="Z轴缩放比例", ClampMin="0.1", ClampMax="10.0"))
+	float ZAxisScale = 1.0f;
+
+	/* 自动调整Z轴范围 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis", meta=(ToolTip="自动调整Z轴范围以最佳显示数据差异"))
+	bool bAutoAdjustZAxis = false;
+
+	/* 自动调整Z轴时的边距百分比(0-0.5) */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis", meta=(ToolTip="自动调整Z轴时的边距百分比", ClampMin="0.0", ClampMax="0.5", EditCondition="bAutoAdjustZAxis"))
+	float ZAxisMarginPercent = 0.1f;
 
 	/* 统计轴线 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | Statistical Lines", meta=(ToolTip="显示统计数据的轴线"))
@@ -305,6 +328,36 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category="Chart Property | Statistical Lines")
 	virtual TArray<float> GetAllDataValues() const;
+
+	/**
+	 * 设置Z轴范围
+	 * @param bFromZero - 是否从0开始
+	 * @param MinValue - 最小值(仅当不从0开始时生效)
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Z-Axis")
+	virtual void SetZAxisRange(bool bFromZero, float MinValue = 0.0f);
+
+	/**
+	 * 设置Z轴缩放比例
+	 * @param Scale - 缩放比例
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Z-Axis")
+	virtual void SetZAxisScale(float Scale);
+
+	/**
+	 * 自动调整Z轴范围
+	 * @param MarginPercent - 边距百分比(0-0.5)
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Z-Axis")
+	virtual void AutoAdjustZAxis(float MarginPercent = 0.1f);
+
+	/**
+	 * 根据Z轴设置计算实际高度
+	 * @param RawHeight - 原始高度
+	 * @return 调整后的高度
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Z-Axis")
+	virtual float CalculateAdjustedHeight(float RawHeight) const;
 
 protected:
 	// Called when the game starts or when spawned
