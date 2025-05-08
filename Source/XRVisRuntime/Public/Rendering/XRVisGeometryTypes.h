@@ -29,13 +29,14 @@ struct XRVISRUNTIME_API FXRVisGeometryResults
  */
 struct XRVISRUNTIME_API FXRVisBoxGeometryParams
 {
-    int32 RowCount = 1000;
-    int32 ColumnCount = 1000;
+    int32 RowCount = 1;
+    int32 ColumnCount = 1;
     float Width = 10.0f;
     float Height = 10.0f;
     float SpaceX = 13.0f;
     float SpaceY = 13.0f;
     TArray<float> HeightValues; // 每个Box的高度值
+	TArray<FColor> ColorValues;
 };
 
 /**

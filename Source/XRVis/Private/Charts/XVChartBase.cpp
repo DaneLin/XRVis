@@ -161,6 +161,14 @@ void AXVChartBase::UpdateMeshSection(int SectionIndex, bool bSRGBConversion)
 		bSRGBConversion);
 }
 
+void AXVChartBase::DrawWithGPU()
+{
+	if (!bEnableGPU)
+	{
+		return;
+	}
+}
+
 
 // Called when the game starts or when spawned
 void AXVChartBase::BeginPlay()

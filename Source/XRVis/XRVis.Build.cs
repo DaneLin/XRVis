@@ -33,7 +33,11 @@ public class XRVis : ModuleRules
                 "Renderer",
                 "RenderCore",
                 "RHI",
-                "XRVisRuntime"
+                "XRVisRuntime",
+                "UMG",
+                "Slate",
+                "SlateCore",
+                "DesktopPlatform"
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -51,8 +55,12 @@ public class XRVis : ModuleRules
 				"Projects", 
 				"ProceduralMeshComponent", 
 				"GPULightmass",
-				"XRVisRuntime"
-				// ... add private dependencies that you statically link with here ...	
+				"XRVisRuntime",
+				"UMG",
+                "Slate",
+                "SlateCore",
+                "DesktopPlatform", "DatasmithCore"
+                // ... add private dependencies that you statically link with here ...	
 			}
 			);
 		

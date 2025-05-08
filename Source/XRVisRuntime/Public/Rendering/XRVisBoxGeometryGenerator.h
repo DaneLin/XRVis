@@ -34,7 +34,9 @@ public:
         SHADER_PARAMETER(float, spaceX)
         SHADER_PARAMETER(float, spaceY)
         SHADER_PARAMETER_RDG_BUFFER_SRV(Buffer<float>, heightBuffer)
+        // SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<float3>, colorBuffer)
         SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<float3>, vertexBuffer)
+        // SHADER_PARAMETER_RDG_BUFFER_UAV(RWStructuredBuffer<float3>, vertexColorBuffer)
         SHADER_PARAMETER_RDG_BUFFER_UAV(RWBuffer<uint>, indexBuffer)
     END_SHADER_PARAMETER_STRUCT()
 

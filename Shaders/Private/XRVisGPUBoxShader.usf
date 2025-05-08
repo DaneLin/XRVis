@@ -8,7 +8,9 @@ float widthy;
 float spaceX;
 float spaceY;
 Buffer<float> heightBuffer;
+// RWStructuredBuffer<float4> colorBuffer;
 RWStructuredBuffer<float3> vertexBuffer;
+// RWStructuredBuffer<float3> vertexColorBuffer;
 RWBuffer<uint> indexBuffer;
 
 [numthreads(THREADS_X, THREADS_Y, THREADS_Z)]
@@ -79,7 +81,8 @@ void MainCS(uint3 DTid : SV_DispatchThreadID, uint GroupIndex : SV_GroupIndex)
         for (uint j = 0; j < 4; j++)
         {
             uint vertexIndex = vertexStart + j;
-            vertexBuffer[vertexStart + j] = float3(positions[indices[i * 4 + j]]);
+            vertexBuffer[vertexIndex] = float3(positions[indices[i * 4 + j]]);
+            // vertexColorBuffer[vertexIndex] = colorBuffer[fmod(boxHeight, 11)];
         }
 
         // 索引数据保持不变

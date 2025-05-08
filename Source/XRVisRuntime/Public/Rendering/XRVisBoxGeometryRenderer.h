@@ -11,6 +11,7 @@ public:
 	struct VertexAttr
 	{
 		FVector3f Position;
+		// FColor Color;
 	};
 	class FVertexAttrDeclaration : public FRenderResource
 	{
@@ -22,6 +23,7 @@ public:
 			FVertexDeclarationElementList elemeList;
 			uint16 stride = sizeof(VertexAttr);
 			elemeList.Emplace(0, STRUCT_OFFSET(VertexAttr, Position), VET_Float3, 0, stride);
+			// elemeList.Emplace(0, STRUCT_OFFSET(VertexAttr, Color), VET_Color, 1, stride);
 
 			VertexDeclarationRHI = PipelineStateCache::GetOrCreateVertexDeclaration(elemeList);
 		}

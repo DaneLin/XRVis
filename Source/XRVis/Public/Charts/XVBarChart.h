@@ -39,7 +39,7 @@ enum class EHistogramChartStyle : uint8
 	Dynamic2
 };
 
-UCLASS()
+UCLASS(Blueprintable)
 class XRVIS_API AXVBarChart : public AXVChartBase
 {
 	GENERATED_BODY()
@@ -96,19 +96,24 @@ protected:
 public:
 	// Sets default values for this actor's properties
 	AXVBarChart();
-	
+	void UpdateAxis();
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	
 	virtual void NotifyActorOnClicked(FKey ButtonPressed) override;
 
+	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
 	virtual void ConstructMesh(double Rate = 1) override;
 
 	virtual void UpdateOnMouseEnterOrLeft() override;
 	
+	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
 	virtual void SetValue(const FString& InValue) override;
 
 	virtual void GenerateAllMeshInfo() override;
+
+	virtual void DrawWithGPU() override;
 	
 	/**
 	 * 应用参考值高亮到柱状图

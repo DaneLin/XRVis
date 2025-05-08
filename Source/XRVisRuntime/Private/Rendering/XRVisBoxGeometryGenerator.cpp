@@ -41,25 +41,29 @@ void FXRVisBoxGeometryGenerator::GenerateGeometry_RenderThread(FRDGBuilder& Grap
 	constexpr uint32 IndexPerBox = 36;
 	const uint32 NumVertices = NumBoxes * VerticesPerBox;
 	const uint32 NumIndices = NumBoxes * IndexPerBox;
-
 	// 创建高度缓冲区
 	FRDGBufferRef HeightBufferRDG = GraphBuilder.CreateBuffer(
 		FRDGBufferDesc::CreateStructuredDesc(sizeof(float), NumBoxes),
 		TEXT("BoxHeightBuffer"));
 	GraphBuilder.QueueBufferUpload(HeightBufferRDG, Params.HeightValues.GetData(), Params.HeightValues.Num() * sizeof(float));
+
+	// FRDGBufferRef ColorBufferRDG = GraphBuilder.CreateBuffer(
+	// 	FRDGBufferDesc::CreateStructuredDesc(sizeof(FColor), 11),
+	// 	TEXT("BoxColorBuffer"));
+	// GraphBuilder.QueueBufferUpload(ColorBufferRDG, Params.ColorValues.GetData(), Params.ColorValues.Num() * sizeof(FColor));
     
 	// 创建输出缓冲区
 	FRDGBufferRef VertexBufferRDG = GraphBuilder.CreateBuffer(
 		FRDGBufferDesc::CreateStructuredDesc(sizeof(FVector3f) , NumVertices),
 		TEXT("BoxVertexBuffer"));
+
+	// FRDGBufferRef VertexColorBufferRDG = GraphBuilder.CreateBuffer(
+	// 	FRDGBufferDesc::CreateStructuredDesc(sizeof(FVector3f) , NumVertices),
+	// 	TEXT("BoxVertexColorBuffer"));
     
 	FRDGBufferRef IndexBufferRDG = GraphBuilder.CreateBuffer(
 		FRDGBufferDesc::CreateStructuredDesc(sizeof(uint32), NumIndices),
 		TEXT("BoxIndexBuffer"));
-    
-	FRDGBufferRef DrawIndirectArgsBufferRDG = GraphBuilder.CreateBuffer(
-		FRDGBufferDesc::CreateIndirectDesc(5), // DrawIndexedIndirect需要5个uint32
-		TEXT("BoxDrawIndirectArgsBuffer"));
     
     // 创建着色器参数
     FXRVisBoxGenCS::FParameters* PassParameters = GraphBuilder.AllocParameters<FXRVisBoxGenCS::FParameters>();
@@ -70,7 +74,9 @@ void FXRVisBoxGeometryGenerator::GenerateGeometry_RenderThread(FRDGBuilder& Grap
     PassParameters->spaceX = Params.SpaceX;
     PassParameters->spaceY = Params.SpaceY;
     PassParameters->heightBuffer = GraphBuilder.CreateSRV(HeightBufferRDG);
+    // PassParameters->colorBuffer = GraphBuilder.CreateUAV(ColorBufferRDG);
     PassParameters->vertexBuffer = GraphBuilder.CreateUAV(VertexBufferRDG);
+    // PassParameters->vertexColorBuffer = GraphBuilder.CreateUAV(VertexColorBufferRDG);
     PassParameters->indexBuffer = GraphBuilder.CreateUAV(IndexBufferRDG);
     
     
@@ -98,10 +104,7 @@ void FXRVisBoxGeometryGenerator::GenerateGeometry_RenderThread(FRDGBuilder& Grap
 
 	Results.CachedVertexBufferRHI = Results.VertexPooledBuffer->GetRHI();
 	Results.CachedIndexBufferRHI = Results.IndexPooledBuffer->GetRHI();
-	// // 注册外部缓冲区
-	// GraphBuilder.RegisterExternalBuffer(Results.VertexPooledBuffer);
-	// GraphBuilder.RegisterExternalBuffer(Results.IndexPooledBuffer);
-	// GraphBuilder.RegisterExternalBuffer(Results.DrawIndirectArgsPooledBuffer);
+
 	if(!bKeepUpdate)
 	{
 		MarkDataUsed();

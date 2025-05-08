@@ -51,11 +51,8 @@ AXVBarChart::AXVBarChart()
 	StatisticalLineLabels.Empty();
 }
 
-// Called when the game starts or when spawned
-void AXVBarChart::BeginPlay()
+void AXVBarChart::UpdateAxis()
 {
-	Super::BeginPlay();
-
 	TArray<AActor*> ChildActors;
 	GetAttachedActors(ChildActors);
 	for (AActor* Actor : ChildActors)
@@ -72,24 +69,18 @@ void AXVBarChart::BeginPlay()
 			}
 		}
 	}
+}
 
+// Called when the game starts or when spawned
+void AXVBarChart::BeginPlay()
+{
+	Super::BeginPlay();
+	
 	// Z轴自动调整已移至GenerateAllMeshInfo方法中，确保只在数据加载完成后才进行调整
 
 	if (bAutoLoadData && bEnableGPU)
 	{
-		if(!HeightValues.IsEmpty() && HeightValues.Num() == XAxisLabels.Num() * YAxisLabels.Num())
-		{
-			FXRVisBoxGeometryParams Params;
-			Params.RowCount = XAxisLabels.Num();
-			Params.ColumnCount = YAxisLabels.Num();
-			Params.HeightValues = HeightValues;
-			static_cast<FXRVisBoxGeometryGenerator*>(GeometryGenerator)->SetParameters(Params);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("No vaild height value array or row and column counts not equal to height value counts"));
-		}
-		
+		DrawWithGPU();
 	}
 }
 
@@ -230,6 +221,7 @@ void AXVBarChart::SetValue(const FString& InValue)
 	// 只有不启用GPU生成的时候才生成CPU数据
 	if(!bEnableGPU)
 	{
+		UpdateAxis();
 		GenerateAllMeshInfo();
 	}
 }
@@ -240,9 +232,7 @@ void AXVBarChart::GenerateAllMeshInfo()
 	{
 		return;
 	}
-
-
-
+	
 	PrepareMeshSections();
 	// 创建对应柱体
 	{
@@ -309,6 +299,25 @@ void AXVBarChart::GenerateAllMeshInfo()
 	if (bAutoAdjustZAxis)
 	{
 		AutoAdjustZAxis(ZAxisMarginPercent);
+	}
+}
+
+void AXVBarChart::DrawWithGPU()
+{
+	Super::DrawWithGPU();
+	UpdateAxis();
+	if(!HeightValues.IsEmpty() && HeightValues.Num() == XAxisLabels.Num() * YAxisLabels.Num())
+	{
+		FXRVisBoxGeometryParams Params;
+		Params.RowCount = XAxisLabels.Num();
+		Params.ColumnCount = YAxisLabels.Num();
+		Params.HeightValues = HeightValues;
+		Params.ColorValues = Colors;
+		static_cast<FXRVisBoxGeometryGenerator*>(GeometryGenerator)->SetParameters(Params);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No vaild height value array or row and column counts not equal to height value counts"));
 	}
 }
 

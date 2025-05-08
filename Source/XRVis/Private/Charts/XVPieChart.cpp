@@ -28,12 +28,14 @@ AXVPieChart::AXVPieChart(): TimeSinceLastUpdate(0), GradientFactor(0), AngleConv
 	LabelConfig.LeaderLineThickness = 1.0f;
 	LabelConfig.LeaderLineLength = 0.0f;
 	
-	// 尝试加载默认字体
-	static ConstructorHelpers::FObjectFinder<UFont> FontObj(TEXT("/Engine/EngineFonts/Roboto"));
-	if (FontObj.Succeeded())
+
+	static ConstructorHelpers::FObjectFinder<UFont> FontObject(TEXT("/Engine/EngineFonts/Roboto"));
+	if (FontObject.Succeeded())
 	{
-		LabelConfig.Font = FontObj.Object;
+		UFont* Font = FontObject.Object;
+		LabelConfig.Font = Font;
 	}
+
 
 	ZoomOffset = 20.f;
 }

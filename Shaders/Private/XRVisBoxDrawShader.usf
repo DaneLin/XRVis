@@ -23,7 +23,7 @@ V2P VS(
 
 float4 PS(in V2P v2p) : SV_Target0
 {
-	float4 color = float4(v2p.Position.xyz * 0.001f,1.f);
-
-	return color;
+	// 使用归一化后的位置作为颜色（更明亮）
+	float3 normalizedPos = normalize(v2p.Position.xyz);
+	return float4(normalizedPos, 1.0f);
 }

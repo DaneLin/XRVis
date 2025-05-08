@@ -97,12 +97,13 @@ struct FXVChartPropertyMapping
 	FString ValueProperty;
 };
 
-UCLASS()
+UCLASS(Blueprintable)
 class XRVIS_API AXVChartBase : public AActor
 {
 	GENERATED_BODY()
 
 public:
+	
 	/* 发光强度 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | Style", meta=(ToolTip="发光强度"))
 	float EmissiveIntensity;
@@ -186,6 +187,8 @@ public:
 
 	virtual void DrawMeshSection(int SectionIndex, bool bCreateCollision = true);
 	virtual void UpdateMeshSection(int SectionIndex, bool bSRGBConversion = false);
+	
+	virtual void DrawWithGPU();
 
 	void GeneratePieSectionInfo(const FVector& CenterPosition, const size_t& SectionIndex,
 	                            const size_t& StartAngle, const size_t& EndAngle, const float& NearDis,
