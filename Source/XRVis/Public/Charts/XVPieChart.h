@@ -180,6 +180,23 @@ protected:
 	void CreateLabelLeaderLines();
 
 	/**
+	 * 创建单段引导线
+	 * @param LineMesh - 要创建的线条网格组件
+	 * @param StartPoint - 线条起点
+	 * @param EndPoint - 线条终点
+	 * @param Color - 线条颜色
+	 * @param Thickness - 线条粗细
+	 */
+	void CreateSingleLeaderLineSegment(UProceduralMeshComponent* LineMesh, const FVector& StartPoint, const FVector& EndPoint, const FColor& Color, float Thickness);
+
+	/**
+	 * 创建标签文本材质
+	 * @param TextColor - 文本颜色
+	 * @return 创建的动态材质实例
+	 */
+	UMaterialInstanceDynamic* CreateTextMaterial(const FColor& TextColor);
+
+	/**
 	 * 计算标签位置
 	 * @param SectionIndex - 区块索引
 	 * @param StartAngle - 区块起始角度
