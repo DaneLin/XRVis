@@ -1,0 +1,10 @@
+diff a/Source/XRVisRuntime/Public/Rendering/XRVisBoxGeometryRenderer.h b/Source/XRVisRuntime/Public/Rendering/XRVisBoxGeometryRenderer.h	(rejected hunks)
+@@ -7,6 +7,8 @@
+ public:
+ 	virtual void Render(FRDGBuilder& GraphBuilder, const FSceneView& InView,const FPostProcessingInputs& Inputs,FXRVisGeometryGenerator& GeometryGenerators) override;
+ 
++	FOnPostOpaqueRender OnPostOpaqueRender;
++
+ public:
+ 	struct VertexAttr
+ 	{

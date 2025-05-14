@@ -152,6 +152,8 @@ public:
 
 	virtual void ConstructMesh(double Rate = 1) override;
 
+	virtual void GenerateLOD() override;
+
 	virtual void UpdateOnMouseEnterOrLeft() override;
 	
 protected:
@@ -242,6 +244,7 @@ private:
 	float SectionHoverCooldown = 0.5f;
 
 	int HoveredSectionIndex = -1;
+
 
 	/**
 	 * 是否启用缩放动画

@@ -103,16 +103,10 @@ void AXVPieChart::Create3DPieChart(const TMap<FString, float>& Data, EPieChartSt
 	AngleConvertFactor = 360.0 / TotalValue;
 
 	DynamicMaterialInstances.Empty();
-	DynamicMaterialInstances.SetNum(TotalCountOfValue + 1);
+	DynamicMaterialInstances.SetNum(GenerateLODCount * TotalCountOfValue + 1);
 
 	// 设置图表样式和颜色
 	Set3DPieChart(ChartStyle, PieChartColor, Shape);
-	
-	// 确保中心位置已设置，如果是零向量，设置为当前Actor的位置
-	if (CenterPosition.IsZero())
-	{
-		CenterPosition = GetActorLocation();
-	}
 	
 	// 完成后构建网格
 	ConstructMesh();
@@ -137,14 +131,7 @@ void AXVPieChart::Set3DPieChart(EPieChartStyle ChartStyle, const TArray<FColor>&
 	}
 
 	ProcessTypeAndShapeInfo();
-
-#if WITH_EDITOR
-	ConstructMesh(1);
-#endif
-
-	// 重新构建网格
 	ConstructMesh();
-	
 	// 更新标签
 	if (LabelConfig.bShowLabels && TotalCountOfValue > 0)
 	{
@@ -204,49 +191,12 @@ void AXVPieChart::ConstructMesh(double Rate)
 	Super::ConstructMesh(Rate);
 	if (AccumulatedValues.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AXVPieChart: 累积值数组为空，无法构建网格"));
 		return;
 	}
 
 	PrepareMeshSections();
 
-	// 记录中心位置
-	CenterPosition = GetActorLocation();
-	UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 构建网格，中心位置: (%f, %f, %f)"), 
-		CenterPosition.X, CenterPosition.Y, CenterPosition.Z);
-
-	size_t DataSize = AccumulatedValues.Num() - 1;
-	size_t CurrentSectionStartAngle = 0;
-	for (int CurrentIndex = 0; CurrentIndex < FMath::CeilToInt(DataSize * Rate); ++CurrentIndex)
-	{
-		size_t CurrentSectionEndAngle = static_cast<size_t>((AccumulatedValues[CurrentIndex]) * AngleConvertFactor *
-			Rate);
-
-		// 日志输出每个区块的角度信息
-		UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 区块 %d, 开始角度: %d, 结束角度: %d"), 
-			CurrentIndex, CurrentSectionStartAngle, CurrentSectionEndAngle - FinalSectionGapAngle);
-
-		GeneratePieSectionInfo(CenterPosition, CurrentIndex,
-		                       CurrentSectionStartAngle, CurrentSectionEndAngle - FinalSectionGapAngle,
-		                       FinalInternalDiameter, ExternalDiameter + CurrentIndex * FinalNightingaleOffset,
-		                       SectionHeight,
-		                       SectionColors[CurrentIndex]);
-
-
-		DynamicMaterialInstances[CurrentIndex] = UMaterialInstanceDynamic::Create(Material, this);
-		DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
-		ProceduralMeshComponent->SetMaterial(CurrentIndex, DynamicMaterialInstances[CurrentIndex]);
-		ProceduralMeshComponent->CreateMeshSection_LinearColor(CurrentIndex,
-		                                                       SectionInfos[CurrentIndex].Vertices,
-		                                                       SectionInfos[CurrentIndex].Indices,
-		                                                       SectionInfos[CurrentIndex].Normals,
-		                                                       SectionInfos[CurrentIndex].UVs,
-		                                                       SectionInfos[CurrentIndex].VertexColors,
-		                                                       SectionInfos[CurrentIndex].Tangents,
-		                                                       true);
-
-		CurrentSectionStartAngle = CurrentSectionEndAngle;
-	}
+	GenerateLOD();
 
 	// 网格构建完成后创建标签
 	// 先清理旧的标签
@@ -278,6 +228,39 @@ void AXVPieChart::ConstructMesh(double Rate)
 		{
 			CreateSectionLabels();
 		});
+	}
+}
+
+void AXVPieChart::GenerateLOD()
+{
+	Super::GenerateLOD();
+
+	check(GenerateLODCount);
+	LODInfos.SetNum(GenerateLODCount);
+	size_t DataSize = AccumulatedValues.Num() - 1;
+	for (int i = 0; i < GenerateLODCount; i++)
+	{
+		size_t CurrentSectionStartAngle = 0;
+		LODInfos[i].LODOffset = i * DataSize;
+		for (int CurrentIndex = 0; CurrentIndex < DataSize; ++CurrentIndex)
+		{
+			uint32_t SectionIndex = LODInfos[i].LODOffset + CurrentIndex;
+			size_t CurrentSectionEndAngle = static_cast<size_t>(AccumulatedValues[CurrentIndex] * AngleConvertFactor);
+			GeneratePieSectionInfo(CenterPosition, SectionIndex,
+								   CurrentSectionStartAngle, CurrentSectionEndAngle - FinalSectionGapAngle,
+								   FinalInternalDiameter, ExternalDiameter + CurrentIndex * FinalNightingaleOffset,
+								   SectionHeight,
+								   SectionColors[CurrentIndex],
+								   i + 1);
+			
+			DynamicMaterialInstances[SectionIndex] = UMaterialInstanceDynamic::Create(Material, this);
+			DynamicMaterialInstances[SectionIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
+			ProceduralMeshComponent->SetMaterial(SectionIndex, DynamicMaterialInstances[SectionIndex]);
+			//DrawMeshSection(SectionIndex);
+
+			CurrentSectionStartAngle = CurrentSectionEndAngle;
+		}
+		LODInfos[i].LODCount = DataSize;
 	}
 }
 
@@ -332,7 +315,6 @@ void AXVPieChart::BeginPlay()
 {
 	Super::BeginPlay();
 	TimeSinceLastUpdate = 0.f;
-	ConstructMesh();
 	
 	// 确保标签和引导线可见
 	if (LabelConfig.bShowLabels && TotalCountOfValue > 0)
@@ -984,14 +966,6 @@ void AXVPieChart::CalculateLabelPosition(
 	// 记录角度值
 	UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 区块 %d 角度计算 - 开始角度: %f, 结束角度: %f, 中点角度: %f度/%f弧度"),
 		SectionIndex, StartAngle, EndAngle, MidAngleDegrees, MidAngleRadians);
-	
-	// 检查中心点是否有效
-	if (CenterPosition.IsZero())
-	{
-		CenterPosition = GetActorLocation();
-		UE_LOG(LogTemp, Warning, TEXT("AXVPieChart: 中心点为零，使用Actor位置: (%f, %f, %f)"), 
-			CenterPosition.X, CenterPosition.Y, CenterPosition.Z);
-	}
 	
 	// 如果这个区块有特殊的半径（例如南丁格尔玫瑰图），计算正确的外径
 	float ActualExternalRadius = ExternalDiameter;

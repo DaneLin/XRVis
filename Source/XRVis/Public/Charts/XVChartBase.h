@@ -33,6 +33,27 @@ enum class EStatisticalLineType : uint8
 	Custom UMETA(DisplayName="自定义值")
 };
 
+// 添加LOD类型枚举
+UENUM(BlueprintType)
+enum class ELODType : uint8
+{
+	None UMETA(DisplayName="无"),
+	Distance UMETA(DisplayName="距离"),
+	ScreenSize UMETA(DisplayName="屏幕大小")
+};
+
+USTRUCT(BlueprintType)
+struct FLODInfo
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LOD")
+	int LODOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LOD")
+	int LODCount;
+};
+
 // 添加统计轴线结构体
 USTRUCT(BlueprintType)
 struct FXVStatisticalLine
@@ -171,28 +192,45 @@ public:
 	/* 是否启用统计轴线 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | Statistical Lines", meta=(ToolTip="是否启用统计轴线"))
 	bool bEnableStatisticalLines = false;
+	
+	/* 生成LOD数量 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="生成LOD数量", ClampMin = "1"))
+	int GenerateLODCount = 4;
+	
+	/* LOD信息 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD信息"))
+	TArray<FLODInfo> LODInfos;
+
+	/* 当前LOD级别 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD信息"))
+	int CurrentLOD = 0;
 
 public:
 	// Sets default values for this actor's properties
 	AXVChartBase();
 	virtual ~AXVChartBase();
+
+	void PrepareMeshSections();
+
+	UFUNCTION(BlueprintCallable)
+	void DrawMeshLOD(int LODLevel);
 	
 	virtual void SetValue(const FString& InValue);
 	virtual void SetStyle();
 	virtual void ConstructMesh(double Rate = 1);
-	void PrepareMeshSections();
 	virtual void ClearSelectedSection(const int& SectionIndex);
+	virtual void GenerateLOD();
 	virtual void GenerateAllMeshInfo();
 	virtual void UpdateSectionVerticesOfZ(const double& Scale);
-
 	virtual void DrawMeshSection(int SectionIndex, bool bCreateCollision = true);
 	virtual void UpdateMeshSection(int SectionIndex, bool bSRGBConversion = false);
+	
 	
 	virtual void DrawWithGPU();
 
 	void GeneratePieSectionInfo(const FVector& CenterPosition, const size_t& SectionIndex,
 	                            const size_t& StartAngle, const size_t& EndAngle, const float& NearDis,
-	                            const float& FarDis, const int& Height, const FColor& SectionColor);
+	                            const float& FarDis, const int& Height, const FColor& SectionColor, const int& Step = 1.0f);
 
 	// Mouse Event
 	UFUNCTION(BlueprintCallable)
@@ -421,10 +459,6 @@ protected:
 	/* 当前鼠标是否进入该组件 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	bool bIsMouseEntered;
-
-	/* 是否构造LOD */
-	UPROPERTY(EditAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
-	bool bGenerateLOD;
 
 	/* 动画是否结束标记 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))

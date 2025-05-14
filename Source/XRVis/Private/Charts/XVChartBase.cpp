@@ -24,7 +24,6 @@ AXVChartBase::AXVChartBase()
 	RootComponent = ProceduralMeshComponent;
 
 	Tags.Add(FName("Chart"));
-	bGenerateLOD = false;
 	TotalCountOfValue = 0;
 	
 	EmissiveIntensity = 10.f;
@@ -102,10 +101,21 @@ void AXVChartBase::PrepareMeshSections()
 	ProceduralMeshComponent->ClearAllMeshSections();
 	ProceduralMeshComponent->ClearCollisionConvexMeshes();
 	SectionInfos.Empty();
-	SectionInfos.SetNum(TotalCountOfValue + 1);
+	SectionInfos.SetNum( GenerateLODCount * TotalCountOfValue + 1);
 	LabelComponents.Empty();
 	LabelComponents.SetNum(TotalCountOfValue);
 	VerticesBackup.Empty();
+}
+
+void AXVChartBase::DrawMeshLOD(int LODLevel)
+{
+	check(LODLevel < GenerateLODCount);
+
+	for (int Index = 0; Index < LODInfos[LODLevel].LODCount; ++Index)
+	{
+		int SectionIndex = Index + LODInfos[LODLevel].LODOffset;
+		DrawMeshSection(SectionIndex);
+	}
 }
 
 void AXVChartBase::ClearSelectedSection(const int& SectionIndex)
@@ -118,8 +128,14 @@ void AXVChartBase::ClearSelectedSection(const int& SectionIndex)
 	SectionInfos[SectionIndex].VertexColors.Empty();
 }
 
+void AXVChartBase::GenerateLOD()
+{
+	// 子类实现
+}
+
 void AXVChartBase::GenerateAllMeshInfo()
 {
+	// 子类实现
 }
 
 void AXVChartBase::UpdateSectionVerticesOfZ(const double& Scale)
@@ -688,7 +704,7 @@ void AXVChartBase::SetValueFromNamedData(const TArray<TSharedPtr<FJsonObject>>& 
 void AXVChartBase::GeneratePieSectionInfo(const FVector& CenterPosition, const size_t& SectionIndex,
                                           const size_t& StartAngle, const size_t& EndAngle, const float& NearDis,
                                           const float& FarDis, const int& Height,
-                                          const FColor& SectionColor)
+                                          const FColor& SectionColor, const int& Step)
 {
 	if (NearDis > FarDis || StartAngle >= EndAngle)
 	{
@@ -729,7 +745,7 @@ void AXVChartBase::GeneratePieSectionInfo(const FVector& CenterPosition, const s
 	for (; CurrentAngle < EndAngle;)
 	{
 		FXVPlaneInfo NextPlaneInfo;
-		CurrentAngle += 1;
+		CurrentAngle += Step;
 		if (CurrentAngle > EndAngle)
 		{
 			CurrentAngle = EndAngle;
