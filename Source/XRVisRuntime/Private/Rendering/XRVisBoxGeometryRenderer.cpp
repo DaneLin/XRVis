@@ -55,9 +55,11 @@ void FXRVisBoxGeometryRenderer::Render(FRDGBuilder& GraphBuilder,const  FSceneVi
 	FScreenPassTexture SceneColor((*Inputs.SceneTextures)->SceneColorTexture, PrimaryViewRect);
 	FMatrix ViewProj = InView.ViewMatrices.GetViewProjectionMatrix();
 
+
 	FXRVisBoxShader::FParameters* PassParameters = GraphBuilder.AllocParameters<FXRVisBoxShader::FParameters>();
 	FScreenPassRenderTarget SceneColorRenderTarget(SceneColor, ERenderTargetLoadAction::ELoad);
 	PassParameters->RenderTargets[0] = SceneColorRenderTarget.GetRenderTargetBinding();
+	PassParameters->RenderTargets.DepthStencil = FDepthStencilBinding((*Inputs.SceneTextures)->SceneDepthTexture, ERenderTargetLoadAction::ELoad, ERenderTargetLoadAction::ELoad, FExclusiveDepthStencil::DepthWrite_StencilWrite);;
 	PassParameters->ViewProj = FMatrix44f(ViewProj);
 	PassParameters->ModelMatrix = FMatrix44f(ModelMatrix);
 	
@@ -74,9 +76,9 @@ void FXRVisBoxGeometryRenderer::Render(FRDGBuilder& GraphBuilder,const  FSceneVi
 
 			FGraphicsPipelineStateInitializer GraphicsPSOInit;
 			RHICmdList.ApplyCachedRenderTargets(GraphicsPSOInit);
-			GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_None>::GetRHI();
+			GraphicsPSOInit.RasterizerState = TStaticRasterizerState<FM_Solid, CM_CW>::GetRHI();
 			GraphicsPSOInit.DepthStencilState = TStaticDepthStencilState<true, CF_GreaterEqual>::GetRHI();
-			GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGBA, BO_Add, BF_One, BF_Zero, BO_Add, BF_One, BF_Zero>::GetRHI();
+			GraphicsPSOInit.BlendState = TStaticBlendState<CW_RGBA, BO_Add, BF_SourceAlpha, BF_InverseSourceAlpha>::GetRHI();
 			GraphicsPSOInit.PrimitiveType = PT_TriangleList;
 			GraphicsPSOInit.BoundShaderState.VertexDeclarationRHI = GXRVisBoxGeometryRendererVertexAttrDeclaration.VertexDeclarationRHI;
 			GraphicsPSOInit.BoundShaderState.VertexShaderRHI = ShaderVS.GetVertexShader();
