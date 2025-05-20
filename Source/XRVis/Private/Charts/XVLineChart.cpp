@@ -236,10 +236,7 @@ void AXVLineChart::Create3DLineChart(const FString& Data,
 	Set3DLineChart(ChartStyle, LineChartColor);
 
 	SetValue(Data);
-
-#if WITH_EDITOR
-	ConstructMesh(1);
-#endif
+	
 }
 
 void AXVLineChart::SetValue(const FString& InValue)
@@ -309,10 +306,7 @@ void AXVLineChart::ConstructMesh(double Rate)
 
 	UpdateSectionVerticesOfZ(Rate);
 
-	for (int i = 0; i < LODInfos[CurrentLOD].LODCount; ++i)
-	{
-		DrawMeshSection(LODInfos[CurrentLOD].LODOffset + i);
-	}
+	UpdateLOD();
 }
 
 void AXVLineChart::GenerateAllMeshInfo()

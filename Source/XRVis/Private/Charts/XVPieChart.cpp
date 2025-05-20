@@ -428,6 +428,7 @@ void AXVPieChart::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	UpdateLOD();
 	{
 		TimeSinceLastUpdate += DeltaTime;
 		if (TimeSinceLastUpdate < SectionHoverCooldown)

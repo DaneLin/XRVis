@@ -361,10 +361,7 @@ void AXVBarChart::ConstructMesh(double Rate)
 
 	UpdateSectionVerticesOfZ(Rate);
 
-	for (int i = 0; i < LODInfos[CurrentLOD].LODCount; ++i)
-	{
-		DrawMeshSection(LODInfos[CurrentLOD].LODOffset + i);
-	}
+	UpdateLOD();
 }
 
 void AXVBarChart::UpdateOnMouseEnterOrLeft()

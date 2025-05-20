@@ -25,7 +25,7 @@ AXVChartBase::AXVChartBase()
 
 	Tags.Add(FName("Chart"));
 	TotalCountOfValue = 0;
-	
+
 	EmissiveIntensity = 10.f;
 	EmissiveColor = FColor::White;
 
@@ -37,7 +37,7 @@ AXVChartBase::AXVChartBase()
 
 	// 初始化统计轴线相关属性
 	bEnableStatisticalLines = false;
-	
+
 	// 初始化Z轴控制相关属性
 	bForceZeroBase = true;
 	MinZAxisValue = 0.0f;
@@ -48,10 +48,10 @@ AXVChartBase::AXVChartBase()
 	bAnimationFinished = false;
 	CurrentBuildTime = 0.f;
 	BuildTime = 1.5f;
-	
+
 	// 初始化数据管理器
 	ChartDataManager = CreateDefaultSubobject<UXVDataManager>(TEXT("ChartDataManager"));
-	
+
 	// 默认设置
 	bAutoLoadData = false;
 	bEnableGPU = false;
@@ -59,6 +59,16 @@ AXVChartBase::AXVChartBase()
 	// GPU
 	GeometryGenerator = new FXRVisBoxGeometryGenerator();
 	GeometryRenderer = new FXRVisBoxGeometryRenderer();
+
+	// LOD
+	LODSwitchDis.Push(0);
+	LODSwitchDis.Push(500);
+	LODSwitchDis.Push(1000);
+	LODSwitchDis.Push(20000);
+	LODSwitchSize.Push(0.0);
+	LODSwitchSize.Push(0.2);
+	LODSwitchSize.Push(0.4);
+	LODSwitchSize.Push(0.8);
 
 	PrepareMeshSections();
 }
@@ -109,7 +119,7 @@ void AXVChartBase::PrepareMeshSections()
 	LODInfos.SetNum(GenerateLODCount);
 	SectionInfos.Empty();
 	// TODO: Bigger than actually needed
-	SectionInfos.SetNum( GenerateLODCount * TotalCountOfValue + 1);
+	SectionInfos.SetNum(GenerateLODCount * TotalCountOfValue + 1);
 	LabelComponents.Empty();
 	LabelComponents.SetNum(TotalCountOfValue);
 	VerticesBackup.Empty();
@@ -122,11 +132,23 @@ void AXVChartBase::DrawMeshLOD(int LODLevel)
 		return;
 	}
 	check(LODLevel < GenerateLODCount);
-	CurrentLOD = LODLevel;
-	for (int Index = 0; Index < LODInfos[CurrentLOD].LODCount; ++Index)
+	if(CurrentLOD == -1 || CurrentLOD != LODLevel)
 	{
-		int SectionIndex = Index + LODInfos[CurrentLOD].LODOffset;
-		DrawMeshSection(SectionIndex);
+		if(CurrentLOD != -1)
+		{
+			for (int Index = 0; Index < LODInfos[CurrentLOD].LODCount; ++Index)
+			{
+				int SectionIndex = Index + LODInfos[CurrentLOD].LODOffset;
+				ProceduralMeshComponent->ClearMeshSection(SectionIndex);
+			}
+		}
+		
+		CurrentLOD = LODLevel;
+		for (int Index = 0; Index < LODInfos[CurrentLOD].LODCount; ++Index)
+		{
+			int SectionIndex = Index + LODInfos[CurrentLOD].LODOffset;
+			DrawMeshSection(SectionIndex);
+		}
 	}
 }
 
@@ -153,7 +175,7 @@ void AXVChartBase::GenerateAllMeshInfo()
 void AXVChartBase::UpdateSectionVerticesOfZ(const double& Scale)
 {
 	BackupVertices();
-	for (size_t SectionIndex =0; SectionIndex <SectionInfos.Num(); SectionIndex++)
+	for (size_t SectionIndex = 0; SectionIndex < SectionInfos.Num(); SectionIndex++)
 	{
 		FXVChartSectionInfo& XVChartSectionInfo = SectionInfos[SectionIndex];
 		for (size_t VerticeIndex = 0; VerticeIndex < XVChartSectionInfo.Vertices.Num(); VerticeIndex++)
@@ -168,13 +190,13 @@ void AXVChartBase::UpdateSectionVerticesOfZ(const double& Scale)
 void AXVChartBase::DrawMeshSection(int SectionIndex, bool bCreateCollision)
 {
 	ProceduralMeshComponent->CreateMeshSection_LinearColor(SectionIndex,
-		SectionInfos[SectionIndex].Vertices,
-		SectionInfos[SectionIndex].Indices,
-		SectionInfos[SectionIndex].Normals,
-		SectionInfos[SectionIndex].UVs,
-		SectionInfos[SectionIndex].VertexColors,
-		SectionInfos[SectionIndex].Tangents,
-		bCreateCollision);
+	                                                       SectionInfos[SectionIndex].Vertices,
+	                                                       SectionInfos[SectionIndex].Indices,
+	                                                       SectionInfos[SectionIndex].Normals,
+	                                                       SectionInfos[SectionIndex].UVs,
+	                                                       SectionInfos[SectionIndex].VertexColors,
+	                                                       SectionInfos[SectionIndex].Tangents,
+	                                                       bCreateCollision);
 }
 
 void AXVChartBase::UpdateMeshSection(int SectionIndex, bool bSRGBConversion)
@@ -214,13 +236,13 @@ void AXVChartBase::BeginPlay()
 	{
 		LoadDataFromFile(DataFilePath);
 	}
-	
+
 	// 如果启用了参考值高亮，应用高亮效果
 	if (bEnableReferenceHighlight)
 	{
 		ApplyReferenceHighlight();
 	}
-	
+
 	// 如果启用了统计轴线，应用统计轴线
 	if (bEnableStatisticalLines)
 	{
@@ -232,10 +254,10 @@ void AXVChartBase::BeginPlay()
 void AXVChartBase::BackupVertices()
 {
 	// 只备份一次
-	if(VerticesBackup.IsEmpty())
+	if (VerticesBackup.IsEmpty())
 	{
 		VerticesBackup.SetNum(SectionInfos.Num());
-		for (size_t SectionIndex =0; SectionIndex <SectionInfos.Num(); SectionIndex++)
+		for (size_t SectionIndex = 0; SectionIndex < SectionInfos.Num(); SectionIndex++)
 		{
 			FXVChartSectionInfo& XVChartSectionInfo = SectionInfos[SectionIndex];
 			VerticesBackup[SectionIndex].SetNum(XVChartSectionInfo.Vertices.Num());
@@ -257,7 +279,7 @@ void AXVChartBase::Tick(float DeltaTime)
 		CurrentBuildTime = 0.f;
 	}
 
-	if(bEnableGPU)
+	if (bEnableGPU)
 	{
 		GeometryRenderer->SetModelMatrix(static_cast<FMatrix44f>(GetActorTransform().ToMatrixWithScale()));
 	}
@@ -272,42 +294,41 @@ bool AXVChartBase::LoadDataFromFile(const FString& FilePath)
 		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 文件路径为空"));
 		return false;
 	}
-	
+
 	if (!ChartDataManager)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 数据管理器未初始化,现在进行初始化"));
 		ChartDataManager = NewObject<UXVDataManager>(this, TEXT("ChartDataManager"));
-
 	}
-	
+
 	// 保存当前文件路径
 	DataFilePath = FilePath;
-	
+
 	// 读取文件内容
-    FString FileContent;
-    if (FFileHelper::LoadFileToString(FileContent, *FilePath))
-    {
-        // 判断文件类型
-        FString Extension = FPaths::GetExtension(FilePath);
-        
-        if (Extension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
-        {
-            // 首先尝试直接解析JSON
-            if (SetValueFromJson(FileContent))
-            {
-                return true;
-            }
-        }
-    }
-	
+	FString FileContent;
+	if (FFileHelper::LoadFileToString(FileContent, *FilePath))
+	{
+		// 判断文件类型
+		FString Extension = FPaths::GetExtension(FilePath);
+
+		if (Extension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
+		{
+			// 首先尝试直接解析JSON
+			if (SetValueFromJson(FileContent))
+			{
+				return true;
+			}
+		}
+	}
+
 	// 如果直接解析失败，使用之前的数据管理器方法
 	bool bSuccess = LoadDataByFileExtension(FilePath);
-	
+
 	if (bSuccess)
 	{
 		// 格式化数据
 		FString FormattedData = GetFormattedDataForChart();
-		
+
 		// 设置图表值
 		if (!FormattedData.IsEmpty())
 		{
@@ -315,7 +336,7 @@ bool AXVChartBase::LoadDataFromFile(const FString& FilePath)
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -326,24 +347,24 @@ bool AXVChartBase::LoadDataFromString(const FString& Content, const FString& Fil
 		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 内容为空"));
 		return false;
 	}
-	
+
 	if (!ChartDataManager)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 数据管理器未初始化"));
 		return false;
 	}
-	
+
 	// 如果是JSON，首先尝试直接解析
-    if (FileExtension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
-    {
-        if (SetValueFromJson(Content))
-        {
-            return true;
-        }
-    }
-	
+	if (FileExtension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
+	{
+		if (SetValueFromJson(Content))
+		{
+			return true;
+		}
+	}
+
 	bool bSuccess = false;
-	
+
 	// 如果直接解析失败，使用之前的数据管理器方法
 	// 根据文件扩展名选择合适的加载方法
 	if (FileExtension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
@@ -359,12 +380,12 @@ bool AXVChartBase::LoadDataFromString(const FString& Content, const FString& Fil
 		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 不支持的文件扩展名 %s"), *FileExtension);
 		return false;
 	}
-	
+
 	if (bSuccess)
 	{
 		// 格式化数据
 		FString FormattedData = GetFormattedDataForChart();
-		
+
 		// 设置图表值
 		if (!FormattedData.IsEmpty())
 		{
@@ -376,7 +397,7 @@ bool AXVChartBase::LoadDataFromString(const FString& Content, const FString& Fil
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 数据加载失败 - %s"), *ChartDataManager->GetLastError());
 	}
-	
+
 	return false;
 }
 
@@ -384,7 +405,7 @@ bool AXVChartBase::LoadDataByFileExtension(const FString& FilePath)
 {
 	// 获取文件扩展名
 	FString Extension = FPaths::GetExtension(FilePath);
-	
+
 	// 根据文件扩展名选择合适的加载方法
 	if (Extension.Equals(TEXT("json"), ESearchCase::IgnoreCase))
 	{
@@ -412,7 +433,7 @@ FString AXVChartBase::FormatDataByChartType()
 	// 默认实现，子类可重写以提供特定图表类型的实现
 	// 检查图表类型（通过类名判断）
 	FString ClassName = GetClass()->GetName();
-	
+
 	if (ClassName.Contains(TEXT("BarChart")))
 	{
 		// 柱状图
@@ -438,26 +459,26 @@ FString AXVChartBase::FormatDataByChartType()
 			PropertyMapping.CategoryProperty,
 			PropertyMapping.ValueProperty
 		);
-		
+
 		// 将TMap转换为JSON字符串
 		FString ResultJson;
 		TArray<TSharedPtr<FJsonValue>> JsonArray;
-		
+
 		for (const auto& Pair : PieData)
 		{
 			TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject);
 			JsonObject->SetStringField("name", Pair.Key);
 			JsonObject->SetNumberField("value", Pair.Value);
-			
+
 			JsonArray.Add(MakeShareable(new FJsonValueObject(JsonObject)));
 		}
-		
+
 		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ResultJson);
 		FJsonSerializer::Serialize(JsonArray, Writer);
-		
+
 		return ResultJson;
 	}
-	
+
 	// 其他未知类型
 	UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 未知图表类型 %s，无法格式化数据"), *ClassName);
 	return TEXT("");
@@ -465,252 +486,255 @@ FString AXVChartBase::FormatDataByChartType()
 
 bool AXVChartBase::SetValueFromJson(const FString& JsonString)
 {
-    if (JsonString.IsEmpty())
-        return false;
-        
-    // 尝试解析JSON
-    TSharedPtr<FJsonValue> JsonValue;
-    TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(JsonString);
-    if (!FJsonSerializer::Deserialize(JsonReader, JsonValue) || !JsonValue.IsValid())
-    {
-        UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 无法解析JSON数据"));
-        return false;
-    }
-    
-    // 检查是数组格式
-    if (JsonValue->Type == EJson::Array)
-    {
-        TArray<TSharedPtr<FJsonValue>> JsonArray = JsonValue->AsArray();
-        
-        if (JsonArray.Num() == 0)
-            return false;
-            
-        // 检查第一个元素以确定数据格式
-        TSharedPtr<FJsonValue> FirstElement = JsonArray[0];
-        
-        // 原始格式 [[x,y,z], ...]
-        if (FirstElement->Type == EJson::Array)
-        {
-            // 使用原始SetValue方法
-            SetValue(JsonString);
-            return true;
-        }
-        // 对象格式 [{"x": ..., "y": ..., "z": ...}, ...]
-        else if (FirstElement->Type == EJson::Object)
-        {
-            // 收集所有对象
-            TArray<TSharedPtr<FJsonObject>> NamedData;
-            for (const auto& Item : JsonArray)
-            {
-                if (Item->Type == EJson::Object)
-                {
-                    NamedData.Add(Item->AsObject());
-                }
-            }
-            
-            // 使用命名数据方法
-            if (NamedData.Num() > 0)
-            {
-                SetValueFromNamedData(NamedData);
-                return true;
-            }
-        }
-    }
-    
-    UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 不支持的JSON数据格式"));
-    return false;
+	if (JsonString.IsEmpty())
+		return false;
+
+	// 尝试解析JSON
+	TSharedPtr<FJsonValue> JsonValue;
+	TSharedRef<TJsonReader<>> JsonReader = TJsonReaderFactory<>::Create(JsonString);
+	if (!FJsonSerializer::Deserialize(JsonReader, JsonValue) || !JsonValue.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 无法解析JSON数据"));
+		return false;
+	}
+
+	// 检查是数组格式
+	if (JsonValue->Type == EJson::Array)
+	{
+		TArray<TSharedPtr<FJsonValue>> JsonArray = JsonValue->AsArray();
+
+		if (JsonArray.Num() == 0)
+			return false;
+
+		// 检查第一个元素以确定数据格式
+		TSharedPtr<FJsonValue> FirstElement = JsonArray[0];
+
+		// 原始格式 [[x,y,z], ...]
+		if (FirstElement->Type == EJson::Array)
+		{
+			// 使用原始SetValue方法
+			SetValue(JsonString);
+			return true;
+		}
+		// 对象格式 [{"x": ..., "y": ..., "z": ...}, ...]
+		else if (FirstElement->Type == EJson::Object)
+		{
+			// 收集所有对象
+			TArray<TSharedPtr<FJsonObject>> NamedData;
+			for (const auto& Item : JsonArray)
+			{
+				if (Item->Type == EJson::Object)
+				{
+					NamedData.Add(Item->AsObject());
+				}
+			}
+
+			// 使用命名数据方法
+			if (NamedData.Num() > 0)
+			{
+				SetValueFromNamedData(NamedData);
+				return true;
+			}
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 不支持的JSON数据格式"));
+	return false;
 }
 
 void AXVChartBase::SetValueFromNamedData(const TArray<TSharedPtr<FJsonObject>>& NamedData)
 {
-    if (NamedData.IsEmpty())
-        return;
+	if (NamedData.IsEmpty())
+		return;
 
-    // 验证是否设置了必要的属性映射
-    if (PropertyMapping.XProperty.IsEmpty() || PropertyMapping.YProperty.IsEmpty() || PropertyMapping.ZProperty.IsEmpty())
-    {
-        UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 缺少必要的属性映射，请设置PropertyMapping中的XProperty、YProperty和ZProperty"));
-        return;
-    }
-        
-    // 收集所有唯一的X和Y值
-    TSet<FString> UniqueXValues;
-    TSet<FString> UniqueYValues;
-    
-    // 遍历所有数据项，提取X和Y值
-    for (const auto& DataItem : NamedData)
-    {
-        // 检查所需的字段是否存在
-        if (DataItem->HasField(PropertyMapping.XProperty) && 
-            DataItem->HasField(PropertyMapping.YProperty) && 
-            DataItem->HasField(PropertyMapping.ZProperty))
-        {
-            // 获取X值
-            FString XValue;
-            if (DataItem->TryGetStringField(PropertyMapping.XProperty, XValue))
-            {
-                UniqueXValues.Add(XValue);
-            }
-            else
-            {
-                double XNumeric = 0;
-                if (DataItem->TryGetNumberField(PropertyMapping.XProperty, XNumeric))
-                {
-                    XValue = FString::Printf(TEXT("%g"), XNumeric);
-                    UniqueXValues.Add(XValue);
-                }
-            }
-            
-            // 获取Y值
-            FString YValue;
-            if (DataItem->TryGetStringField(PropertyMapping.YProperty, YValue))
-            {
-                UniqueYValues.Add(YValue);
-            }
-            else
-            {
-                double YNumeric = 0;
-                if (DataItem->TryGetNumberField(PropertyMapping.YProperty, YNumeric))
-                {
-                    YValue = FString::Printf(TEXT("%g"), YNumeric);
-                    UniqueYValues.Add(YValue);
-                }
-            }
-        }
-    }
-    
-    // 转换为排序数组
-    TArray<FString> SortedXValues = UniqueXValues.Array();
-    TArray<FString> SortedYValues = UniqueYValues.Array();
-    
-    // 自定义排序逻辑：如果是纯数字则按照数值排序，否则按照字符串排序
-    auto NumericSort = [](const FString& A, const FString& B) -> bool {
-        // 检查是否都是数字
-        bool bAIsNumeric = true;
-        bool bBIsNumeric = true;
-        double ANumeric = 0.0;
-        double BNumeric = 0.0;
-        
-        // 尝试将字符串转换为数字
-        if (A.IsNumeric() && B.IsNumeric()) {
-            ANumeric = FCString::Atod(*A);
-            BNumeric = FCString::Atod(*B);
-            // 按数值排序
-            return ANumeric < BNumeric;
-        }
-        // 否则使用默认的字符串排序
-        return A < B;
-    };
-    
-    // 使用自定义排序逻辑
-    SortedXValues.Sort(NumericSort);
-    SortedYValues.Sort(NumericSort);
-    
-    // 创建映射字典
-    TMap<FString, int32> XValueToIndex;
-    TMap<FString, int32> YValueToIndex;
-    
-    for (int32 i = 0; i < SortedXValues.Num(); i++)
-    {
-        XValueToIndex.Add(SortedXValues[i], i);
-    }
-    
-    for (int32 i = 0; i < SortedYValues.Num(); i++)
-    {
-        YValueToIndex.Add(SortedYValues[i], i);
-    }
-    
-    // 存储轴标签
-    XAxisLabels = SortedXValues;
-    YAxisLabels = SortedYValues;
-    
-    // 设置图表轴标签（根据图表类型）
-    FString ClassName = GetClass()->GetName();
-    if (ClassName.Contains(TEXT("BarChart")))
-    {
-        AXVBarChart* BarChart = Cast<AXVBarChart>(this);
-        if (BarChart)
-        {
-            BarChart->XTextArrs = SortedXValues;
-            BarChart->YTextArrs = SortedYValues;
-        }
-    }
-    else if (ClassName.Contains(TEXT("LineChart")))
-    {
-        AXVLineChart* LineChart = Cast<AXVLineChart>(this);
-        if (LineChart)
-        {
-            LineChart->XText = SortedXValues;
-            LineChart->YText = SortedYValues;
-        }
-    }
-    
-    // 将命名数据转换为图表所需的格式
-    TArray<TSharedPtr<FJsonValue>> ChartData;
-    
-    for (const auto& DataItem : NamedData)
-    {
-        if (DataItem->HasField(PropertyMapping.XProperty) && 
-            DataItem->HasField(PropertyMapping.YProperty) && 
-            DataItem->HasField(PropertyMapping.ZProperty))
-        {
-            // 获取X值和索引
-            FString XValue;
-            int32 XIndex = 0;
-            
-            if (DataItem->TryGetStringField(PropertyMapping.XProperty, XValue))
-            {
-                XIndex = XValueToIndex.FindRef(XValue);
-            }
-            else
-            {
-                double XNumeric = 0;
-                if (DataItem->TryGetNumberField(PropertyMapping.XProperty, XNumeric))
-                {
-                    XValue = FString::Printf(TEXT("%g"), XNumeric);
-                    XIndex = XValueToIndex.FindRef(XValue);
-                }
-            }
-            
-            // 获取Y值和索引
-            FString YValue;
-            int32 YIndex = 0;
-            
-            if (DataItem->TryGetStringField(PropertyMapping.YProperty, YValue))
-            {
-                YIndex = YValueToIndex.FindRef(YValue);
-            }
-            else
-            {
-                double YNumeric = 0;
-                if (DataItem->TryGetNumberField(PropertyMapping.YProperty, YNumeric))
-                {
-                    YValue = FString::Printf(TEXT("%g"), YNumeric);
-                    YIndex = YValueToIndex.FindRef(YValue);
-                }
-            }
-            
-            // 获取Z值
-            double ZValue = 0;
-            DataItem->TryGetNumberField(PropertyMapping.ZProperty, ZValue);
-            
-            // 创建图表数据项 [YIndex, XIndex, ZValue]
-            TArray<TSharedPtr<FJsonValue>> InnerArray;
-            InnerArray.Add(MakeShareable(new FJsonValueNumber(YIndex)));
-            InnerArray.Add(MakeShareable(new FJsonValueNumber(XIndex)));
-            InnerArray.Add(MakeShareable(new FJsonValueNumber(ZValue)));
-            
-            ChartData.Add(MakeShareable(new FJsonValueArray(InnerArray)));
-        }
-    }
-    
-    // 将转换后的数据序列化为JSON字符串
-    FString FormattedData;
-    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&FormattedData);
-    FJsonSerializer::Serialize(ChartData, Writer);
-    
-    // 使用原始SetValue方法处理
-    SetValue(FormattedData);
+	// 验证是否设置了必要的属性映射
+	if (PropertyMapping.XProperty.IsEmpty() || PropertyMapping.YProperty.IsEmpty() || PropertyMapping.ZProperty.
+		IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AXVChartBase: 缺少必要的属性映射，请设置PropertyMapping中的XProperty、YProperty和ZProperty"));
+		return;
+	}
+
+	// 收集所有唯一的X和Y值
+	TSet<FString> UniqueXValues;
+	TSet<FString> UniqueYValues;
+
+	// 遍历所有数据项，提取X和Y值
+	for (const auto& DataItem : NamedData)
+	{
+		// 检查所需的字段是否存在
+		if (DataItem->HasField(PropertyMapping.XProperty) &&
+			DataItem->HasField(PropertyMapping.YProperty) &&
+			DataItem->HasField(PropertyMapping.ZProperty))
+		{
+			// 获取X值
+			FString XValue;
+			if (DataItem->TryGetStringField(PropertyMapping.XProperty, XValue))
+			{
+				UniqueXValues.Add(XValue);
+			}
+			else
+			{
+				double XNumeric = 0;
+				if (DataItem->TryGetNumberField(PropertyMapping.XProperty, XNumeric))
+				{
+					XValue = FString::Printf(TEXT("%g"), XNumeric);
+					UniqueXValues.Add(XValue);
+				}
+			}
+
+			// 获取Y值
+			FString YValue;
+			if (DataItem->TryGetStringField(PropertyMapping.YProperty, YValue))
+			{
+				UniqueYValues.Add(YValue);
+			}
+			else
+			{
+				double YNumeric = 0;
+				if (DataItem->TryGetNumberField(PropertyMapping.YProperty, YNumeric))
+				{
+					YValue = FString::Printf(TEXT("%g"), YNumeric);
+					UniqueYValues.Add(YValue);
+				}
+			}
+		}
+	}
+
+	// 转换为排序数组
+	TArray<FString> SortedXValues = UniqueXValues.Array();
+	TArray<FString> SortedYValues = UniqueYValues.Array();
+
+	// 自定义排序逻辑：如果是纯数字则按照数值排序，否则按照字符串排序
+	auto NumericSort = [](const FString& A, const FString& B) -> bool
+	{
+		// 检查是否都是数字
+		bool bAIsNumeric = true;
+		bool bBIsNumeric = true;
+		double ANumeric = 0.0;
+		double BNumeric = 0.0;
+
+		// 尝试将字符串转换为数字
+		if (A.IsNumeric() && B.IsNumeric())
+		{
+			ANumeric = FCString::Atod(*A);
+			BNumeric = FCString::Atod(*B);
+			// 按数值排序
+			return ANumeric < BNumeric;
+		}
+		// 否则使用默认的字符串排序
+		return A < B;
+	};
+
+	// 使用自定义排序逻辑
+	SortedXValues.Sort(NumericSort);
+	SortedYValues.Sort(NumericSort);
+
+	// 创建映射字典
+	TMap<FString, int32> XValueToIndex;
+	TMap<FString, int32> YValueToIndex;
+
+	for (int32 i = 0; i < SortedXValues.Num(); i++)
+	{
+		XValueToIndex.Add(SortedXValues[i], i);
+	}
+
+	for (int32 i = 0; i < SortedYValues.Num(); i++)
+	{
+		YValueToIndex.Add(SortedYValues[i], i);
+	}
+
+	// 存储轴标签
+	XAxisLabels = SortedXValues;
+	YAxisLabels = SortedYValues;
+
+	// 设置图表轴标签（根据图表类型）
+	FString ClassName = GetClass()->GetName();
+	if (ClassName.Contains(TEXT("BarChart")))
+	{
+		AXVBarChart* BarChart = Cast<AXVBarChart>(this);
+		if (BarChart)
+		{
+			BarChart->XTextArrs = SortedXValues;
+			BarChart->YTextArrs = SortedYValues;
+		}
+	}
+	else if (ClassName.Contains(TEXT("LineChart")))
+	{
+		AXVLineChart* LineChart = Cast<AXVLineChart>(this);
+		if (LineChart)
+		{
+			LineChart->XText = SortedXValues;
+			LineChart->YText = SortedYValues;
+		}
+	}
+
+	// 将命名数据转换为图表所需的格式
+	TArray<TSharedPtr<FJsonValue>> ChartData;
+
+	for (const auto& DataItem : NamedData)
+	{
+		if (DataItem->HasField(PropertyMapping.XProperty) &&
+			DataItem->HasField(PropertyMapping.YProperty) &&
+			DataItem->HasField(PropertyMapping.ZProperty))
+		{
+			// 获取X值和索引
+			FString XValue;
+			int32 XIndex = 0;
+
+			if (DataItem->TryGetStringField(PropertyMapping.XProperty, XValue))
+			{
+				XIndex = XValueToIndex.FindRef(XValue);
+			}
+			else
+			{
+				double XNumeric = 0;
+				if (DataItem->TryGetNumberField(PropertyMapping.XProperty, XNumeric))
+				{
+					XValue = FString::Printf(TEXT("%g"), XNumeric);
+					XIndex = XValueToIndex.FindRef(XValue);
+				}
+			}
+
+			// 获取Y值和索引
+			FString YValue;
+			int32 YIndex = 0;
+
+			if (DataItem->TryGetStringField(PropertyMapping.YProperty, YValue))
+			{
+				YIndex = YValueToIndex.FindRef(YValue);
+			}
+			else
+			{
+				double YNumeric = 0;
+				if (DataItem->TryGetNumberField(PropertyMapping.YProperty, YNumeric))
+				{
+					YValue = FString::Printf(TEXT("%g"), YNumeric);
+					YIndex = YValueToIndex.FindRef(YValue);
+				}
+			}
+
+			// 获取Z值
+			double ZValue = 0;
+			DataItem->TryGetNumberField(PropertyMapping.ZProperty, ZValue);
+
+			// 创建图表数据项 [YIndex, XIndex, ZValue]
+			TArray<TSharedPtr<FJsonValue>> InnerArray;
+			InnerArray.Add(MakeShareable(new FJsonValueNumber(YIndex)));
+			InnerArray.Add(MakeShareable(new FJsonValueNumber(XIndex)));
+			InnerArray.Add(MakeShareable(new FJsonValueNumber(ZValue)));
+
+			ChartData.Add(MakeShareable(new FJsonValueArray(InnerArray)));
+		}
+	}
+
+	// 将转换后的数据序列化为JSON字符串
+	FString FormattedData;
+	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&FormattedData);
+	FJsonSerializer::Serialize(ChartData, Writer);
+
+	// 使用原始SetValue方法处理
+	SetValue(FormattedData);
 }
 
 void AXVChartBase::GeneratePieSectionInfo(const FVector& CenterPosition, const size_t& SectionIndex,
@@ -915,16 +939,16 @@ float AXVChartBase::GetCursorHitAngle(const FHitResult& HitResult) const
 
 		// 计算角度（弧度）
 		float Angle = FMath::Atan2(Direction.Y, Direction.X);
-		
+
 		// 将角度转换为0-360度
 		if (Angle < 0)
 		{
 			Angle += 2 * PI;
 		}
-		
+
 		return Angle;
 	}
-	
+
 	return 0.0f;
 }
 
@@ -937,7 +961,7 @@ FVector AXVChartBase::GetCursorHitRowAndColAndHeight(const FHitResult& HitResult
 		FVector LocalHitLocation = GetActorTransform().InverseTransformPosition(HitResult.Location);
 		return LocalHitLocation;
 	}
-	
+
 	return FVector::ZeroVector;
 }
 
@@ -949,7 +973,7 @@ void AXVChartBase::ApplyReferenceHighlight()
 void AXVChartBase::SetReferenceValue(float InReferenceValue)
 {
 	ReferenceValue = InReferenceValue;
-	
+
 	// 如果启用了参考值高亮，则应用高亮
 	if (bEnableReferenceHighlight)
 	{
@@ -960,7 +984,7 @@ void AXVChartBase::SetReferenceValue(float InReferenceValue)
 void AXVChartBase::SetReferenceComparisonType(TEnumAsByte<enum EReferenceComparisonType> InComparisonType)
 {
 	ReferenceComparisonType = InComparisonType;
-	
+
 	// 如果启用了参考值高亮，则应用高亮
 	if (bEnableReferenceHighlight)
 	{
@@ -992,7 +1016,7 @@ bool AXVChartBase::CheckAgainstReference(float ValueToCheck) const
 void AXVChartBase::SetEnableReferenceHighlight(bool bEnable)
 {
 	bEnableReferenceHighlight = bEnable;
-	
+
 	// 根据新的启用状态应用或清除高亮
 	if (bEnableReferenceHighlight)
 	{
@@ -1016,7 +1040,7 @@ void AXVChartBase::SetEnableReferenceHighlight(bool bEnable)
 void AXVChartBase::SetReferenceHighlightColor(FLinearColor InColor)
 {
 	ReferenceHighlightColor = InColor;
-	
+
 	// 如果启用了参考值高亮，更新高亮颜色
 	if (bEnableReferenceHighlight)
 	{
@@ -1064,7 +1088,7 @@ int32 AXVChartBase::AddStatisticalLine(EStatisticalLineType LineType, FLinearCol
 	NewLine.LineType = LineType;
 	NewLine.LineColor = LineColor;
 	NewLine.CustomValue = CustomValue;
-	
+
 	// 设置默认标签格式
 	switch (LineType)
 	{
@@ -1086,7 +1110,7 @@ int32 AXVChartBase::AddStatisticalLine(EStatisticalLineType LineType, FLinearCol
 	default:
 		break;
 	}
-	
+
 	// 添加到数组并返回索引
 	return StatisticalLines.Add(NewLine);
 }
@@ -1106,13 +1130,13 @@ float AXVChartBase::CalculateMean() const
 	{
 		return 0.0f;
 	}
-	
+
 	float Sum = 0.0f;
 	for (float Value : Values)
 	{
 		Sum += Value;
 	}
-	
+
 	return Sum / Values.Num();
 }
 
@@ -1123,10 +1147,10 @@ float AXVChartBase::CalculateMedian() const
 	{
 		return 0.0f;
 	}
-	
+
 	// 排序数组
 	Values.Sort();
-	
+
 	// 计算中位数
 	if (Values.Num() % 2 == 0)
 	{
@@ -1148,7 +1172,7 @@ float AXVChartBase::CalculateMax() const
 	{
 		return 0.0f;
 	}
-	
+
 	return FMath::Max(Values);
 }
 
@@ -1159,7 +1183,7 @@ float AXVChartBase::CalculateMin() const
 	{
 		return 0.0f;
 	}
-	
+
 	return FMath::Min(Values);
 }
 
@@ -1173,7 +1197,7 @@ void AXVChartBase::SetZAxisRange(bool bFromZero, float MinValue)
 {
 	bForceZeroBase = bFromZero;
 	MinZAxisValue = bFromZero ? 0.0f : MinValue;
-	
+
 	// 重新构建图表以应用新设置
 	if (TotalCountOfValue > 0)
 	{
@@ -1184,7 +1208,7 @@ void AXVChartBase::SetZAxisRange(bool bFromZero, float MinValue)
 void AXVChartBase::SetZAxisScale(float Scale)
 {
 	ZAxisScale = FMath::Clamp(Scale, 0.1f, 10.0f);
-	
+
 	// 重新构建图表以应用新设置
 	if (TotalCountOfValue > 0)
 	{
@@ -1196,32 +1220,32 @@ void AXVChartBase::AutoAdjustZAxis(float MarginPercent)
 {
 	ZAxisMarginPercent = FMath::Clamp(MarginPercent, 0.0f, 0.5f);
 	bAutoAdjustZAxis = true;
-	
+
 	// 获取所有数据值
 	TArray<float> Values = GetAllDataValues();
 	if (Values.Num() == 0)
 	{
 		return;
 	}
-	
+
 	// 计算数据范围
 	float MinVal = FMath::Min(Values);
 	float MaxVal = FMath::Max(Values);
-	
+
 	// 如果最小值和最大值几乎相等，则进行特殊处理
 	if (FMath::IsNearlyEqual(MinVal, MaxVal, 0.001f))
 	{
 		// 数据基本没有波动，创建一个人工范围
 		MinVal = MaxVal * 0.9f;
 	}
-	
+
 	// 计算范围和边距
 	float Range = MaxVal - MinVal;
 	float Margin = Range * ZAxisMarginPercent;
-	
+
 	// 设置Z轴范围，考虑边距
 	MinZAxisValue = MinVal - Margin;
-	
+
 	// 如果最小值接近0或小于0，则从0开始
 	if (MinZAxisValue <= 0.01f * MaxVal)
 	{
@@ -1232,7 +1256,7 @@ void AXVChartBase::AutoAdjustZAxis(float MarginPercent)
 	{
 		bForceZeroBase = false;
 	}
-	
+
 	// 重新构建图表以应用新设置
 	if (TotalCountOfValue > 0)
 	{
@@ -1247,10 +1271,52 @@ float AXVChartBase::CalculateAdjustedHeight(float RawHeight) const
 	{
 		return RawHeight * ZAxisScale;
 	}
-	
+
 	// 否则，从MinZAxisValue开始计算相对高度
 	float AdjustedHeight = (RawHeight - MinZAxisValue) * ZAxisScale;
-	
+
 	// 确保高度不为负
 	return FMath::Max(0.1f, AdjustedHeight);
+}
+
+void AXVChartBase::UpdateLOD()
+{
+	switch (LODType)
+	{
+	case ELODType::Distance:
+		{
+			FVector CameraLocation =GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraLocation();
+			FVector ActorLocation = GetActorLocation();
+			float Distance = (CameraLocation - ActorLocation).Length();
+			int NewLODLevel = Algo::LowerBound(LODSwitchDis, Distance) - 1;
+			DrawMeshLOD(NewLODLevel);
+		}
+		break;
+	case ELODType::ScreenSize:
+		{
+			FVector Origin, BoxExtent;
+			GetActorBounds(false, Origin, BoxExtent);
+			FVector Origin2BoxExtent = BoxExtent - Origin;
+			float Dis = Origin2BoxExtent.Length();
+			// 获取投影矩阵
+			FMinimalViewInfo CameraView;
+			FMinimalViewInfo ViewInfo = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraCachePOV();
+			FMatrix ProjectionMatrix = ViewInfo.CalculateProjectionMatrix();
+			const float Dist = FVector::Dist(GetActorLocation(), GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation());
+			// Get projection multiple accounting for view scaling.
+			const float ScreenMultiple = FMath::Max(0.5f * ProjectionMatrix.M[0][0], 0.5f * ProjectionMatrix.M[1][1]);
+			// Calculate screen-space projected radius
+			const float ScreenRadius = ScreenMultiple * Dis / FMath::Max(1.0f, Dist);
+			// For clarity, we end up comparing the diameter
+			float CurrentScreenSize = ScreenRadius * 2.f;
+			
+			int NewLODLevel = Algo::LowerBound(LODSwitchSize, CurrentScreenSize);
+			// 屏幕大小越大说明越近，LOD级别越小
+			DrawMeshLOD(GenerateLODCount -  NewLODLevel);
+		}
+		break;
+	default:
+		UE_LOG(LogTemp, Warning, TEXT("Please select correct lod type"));
+		break;
+	}
 }

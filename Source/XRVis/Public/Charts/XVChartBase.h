@@ -46,7 +46,7 @@ USTRUCT(BlueprintType)
 struct FLODInfo
 {
 	GENERATED_BODY()
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LOD")
 	int LODOffset;
 
@@ -59,31 +59,32 @@ USTRUCT(BlueprintType)
 struct FXVStatisticalLine
 {
 	GENERATED_BODY()
-	
+
 	// 轴线类型
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Statistical Line")
 	EStatisticalLineType LineType = EStatisticalLineType::None;
-	
+
 	// 轴线值（如果是Custom类型则使用此值）
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Statistical Line", meta=(EditCondition="LineType==EStatisticalLineType::Custom"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Statistical Line",
+		meta=(EditCondition="LineType==EStatisticalLineType::Custom"))
 	float CustomValue = 0.0f;
-	
+
 	// 实际值（计算后的值）
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Statistical Line")
 	float ActualValue = 0.0f;
-	
+
 	// 轴线颜色
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Statistical Line")
 	FLinearColor LineColor = FLinearColor::White;
-	
+
 	// 轴线宽度
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Statistical Line", meta=(ClampMin="0.1"))
 	float LineWidth = 2.0f;
-	
+
 	// 是否显示标签
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Statistical Line")
 	bool bShowLabel = true;
-	
+
 	// 标签文本格式（使用{value}作为值的占位符）
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Statistical Line")
 	FString LabelFormat = TEXT("{value}");
@@ -124,7 +125,6 @@ class XRVIS_API AXVChartBase : public AActor
 	GENERATED_BODY()
 
 public:
-	
 	/* 发光强度 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | Style", meta=(ToolTip="发光强度"))
 	float EmissiveIntensity;
@@ -170,11 +170,13 @@ public:
 	bool bForceZeroBase = true;
 
 	/* Z轴最小值(仅当不强制从0开始时生效) */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis", meta=(ToolTip="Z轴最小值(仅当不强制从0开始时生效)", EditCondition="!bForceZeroBase"))
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis",
+		meta=(ToolTip="Z轴最小值(仅当不强制从0开始时生效)", EditCondition="!bForceZeroBase"))
 	float MinZAxisValue = 0.0f;
 
 	/* Z轴缩放比例 */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis", meta=(ToolTip="Z轴缩放比例", ClampMin="0.1", ClampMax="10.0"))
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis",
+		meta=(ToolTip="Z轴缩放比例", ClampMin="0.1", ClampMax="10.0"))
 	float ZAxisScale = 1.0f;
 
 	/* 自动调整Z轴范围 */
@@ -182,7 +184,8 @@ public:
 	bool bAutoAdjustZAxis = false;
 
 	/* 自动调整Z轴时的边距百分比(0-0.5) */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis", meta=(ToolTip="自动调整Z轴时的边距百分比", ClampMin="0.0", ClampMax="0.5", EditCondition="bAutoAdjustZAxis"))
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Z-Axis",
+		meta=(ToolTip="自动调整Z轴时的边距百分比", ClampMin="0.0", ClampMax="0.5", EditCondition="bAutoAdjustZAxis"))
 	float ZAxisMarginPercent = 0.1f;
 
 	/* 统计轴线 */
@@ -192,18 +195,30 @@ public:
 	/* 是否启用统计轴线 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | Statistical Lines", meta=(ToolTip="是否启用统计轴线"))
 	bool bEnableStatisticalLines = false;
-	
+
 	/* 生成LOD数量 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="生成LOD数量", ClampMin = "1"))
 	int GenerateLODCount = 4;
-	
+
 	/* LOD信息 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD信息"))
 	TArray<FLODInfo> LODInfos;
-
+	
 	/* 当前LOD级别 */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD信息"))
-	int CurrentLOD = 0;
+	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD级别"))
+	int CurrentLOD = -1;
+
+	/* LOD更新 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD更新"))
+	ELODType LODType;
+
+	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD相机更新距离"))
+	TArray<float> LODSwitchDis;
+
+	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD相机更新大小"))
+	TArray<float> LODSwitchSize;
+
+
 
 public:
 	// Sets default values for this actor's properties
@@ -214,7 +229,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void DrawMeshLOD(int LODLevel);
-	
+
 	virtual void SetValue(const FString& InValue);
 	virtual void SetStyle();
 	virtual void ConstructMesh(double Rate = 1);
@@ -224,13 +239,14 @@ public:
 	virtual void UpdateSectionVerticesOfZ(const double& Scale);
 	virtual void DrawMeshSection(int SectionIndex, bool bCreateCollision = true);
 	virtual void UpdateMeshSection(int SectionIndex, bool bSRGBConversion = false);
-	
-	
+
+
 	virtual void DrawWithGPU();
 
 	void GeneratePieSectionInfo(const FVector& CenterPosition, const size_t& SectionIndex,
 	                            const size_t& StartAngle, const size_t& EndAngle, const float& NearDis,
-	                            const float& FarDis, const int& Height, const FColor& SectionColor, const int& Step = 1.0f);
+	                            const float& FarDis, const int& Height, const FColor& SectionColor,
+	                            const int& Step = 1.0f);
 
 	// Mouse Event
 	UFUNCTION(BlueprintCallable)
@@ -238,24 +254,24 @@ public:
 
 	virtual float GetCursorHitAngle(const FHitResult& HitResult) const;
 	virtual FVector GetCursorHitRowAndColAndHeight(const FHitResult& HitResult) const;
-	
+
 	/* 标志鼠标是否进入该组件 */
 	virtual void NotifyActorBeginCursorOver() override;
 	virtual void NotifyActorEndCursorOver() override;
 	virtual void UpdateOnMouseEnterOrLeft();
 
 	uint32_t GetSectionIndexOfLOD(uint32_t SectionIndex);
-	
+
 	// 数据加载相关函数
 	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
 	virtual bool LoadDataFromFile(const FString& FilePath);
-	
+
 	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
 	virtual bool LoadDataFromString(const FString& Content, const FString& FileExtension);
-	
+
 	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
 	virtual FString GetFormattedDataForChart();
-	
+
 	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
 	UXVDataManager* GetDataManager() const { return ChartDataManager; }
 
@@ -300,7 +316,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category="Chart Property | Reference")
 	virtual void SetEnableReferenceHighlight(bool bEnable);
-	
+
 	/**
 	 * 设置参考值高亮颜色
 	 * @param InColor - 新的高亮颜色
@@ -402,15 +418,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Chart Property | Z-Axis")
 	virtual float CalculateAdjustedHeight(float RawHeight) const;
 
+	UFUNCTION(BlueprintCallable, Category="Chart Property | LOD")
+	virtual void UpdateLOD();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	virtual void BackupVertices();
-	
+
 	/* 根据文件扩展名自动选择合适的加载方法 */
 	virtual bool LoadDataByFileExtension(const FString& FilePath);
-	
+
 	/* 根据图表类型和属性映射转换数据为合适的格式 */
 	virtual FString FormatDataByChartType();
 
@@ -465,7 +484,7 @@ protected:
 	/* 动画是否结束标记 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	bool bAnimationFinished;
-
+	
 	/* 图表数据管理器 */
 	UPROPERTY()
 	UXVDataManager* ChartDataManager;
@@ -473,15 +492,15 @@ protected:
 	// 存储轴标签
 	UPROPERTY(EditAnywhere, Category="Chart Property | Axis")
 	TArray<FString> XAxisLabels;
-    
+
 	UPROPERTY(EditAnywhere, Category="Chart Property | Axis")
 	TArray<FString> YAxisLabels;
 
 	/* GPU生成相关 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | GPU")
 	bool bEnableGPU;
-	
-	TSharedPtr<FXRVisSceneViewExtension, ESPMode::ThreadSafe > SceneViewExtension;
+
+	TSharedPtr<FXRVisSceneViewExtension, ESPMode::ThreadSafe> SceneViewExtension;
 	FXRVisGeometryGenerator* GeometryGenerator;
 	FXRVisGeometryRenderer* GeometryRenderer;
 };
