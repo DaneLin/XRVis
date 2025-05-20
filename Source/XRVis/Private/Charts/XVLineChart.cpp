@@ -1,23 +1,23 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Charts/XVLineChart.h"
+
 #include "Charts/XVChartAxis.h"
-#include "ProceduralMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Kismet/KismetTextLibrary.h"
 #include "PhysicsEngine/ShapeElem.h"
-
+#include "ProceduralMeshComponent.h"
 
 // Sets default values
 AXVLineChart::AXVLineChart()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to
+	// improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	XAxisInterval = 13;
 	YAxisInterval = 13;
 	Width = 10;
-	
+
 	MaxX = std::numeric_limits<int>::min();
 	MinX = std::numeric_limits<int>::max();
 	MaxY = std::numeric_limits<int>::min();
@@ -28,21 +28,23 @@ AXVLineChart::AXVLineChart()
 	SphereRadius = 10.f;
 	NumSphereSlices = 32;
 	NumSphereStacks = 16;
-	
+
 	// 默认顶点颜色数组
-	Colors.Add((FColor::FromHex("#313695")));
-	Colors.Add((FColor::FromHex("#4575b4")));
-	Colors.Add((FColor::FromHex("#74add1")));
-	Colors.Add((FColor::FromHex("#abd9e9")));
-	Colors.Add((FColor::FromHex("#e0f3f8")));
-	Colors.Add((FColor::FromHex("#ffffbf")));
-	Colors.Add((FColor::FromHex("#fee090")));
-	Colors.Add((FColor::FromHex("#fdae61")));
-	Colors.Add((FColor::FromHex("#f46d43")));
-	Colors.Add((FColor::FromHex("#d73027")));
-	Colors.Add((FColor::FromHex("#a50026")));
-	
-	XVChartUtils::LoadResourceFromPath(TEXT("Material'/XRVis/Materials/M_BaseVertexColor.M_BaseVertexColor'"), BaseMaterial);
+	Colors.Add(FColor::FromHex("#313695"));
+	Colors.Add(FColor::FromHex("#4575b4"));
+	Colors.Add(FColor::FromHex("#74add1"));
+	Colors.Add(FColor::FromHex("#abd9e9"));
+	Colors.Add(FColor::FromHex("#e0f3f8"));
+	Colors.Add(FColor::FromHex("#ffffbf"));
+	Colors.Add(FColor::FromHex("#fee090"));
+	Colors.Add(FColor::FromHex("#fdae61"));
+	Colors.Add(FColor::FromHex("#f46d43"));
+	Colors.Add(FColor::FromHex("#d73027"));
+	Colors.Add(FColor::FromHex("#a50026"));
+
+	XVChartUtils::LoadResourceFromPath(
+		TEXT("Material'/XRVis/Materials/M_BaseVertexColor.M_BaseVertexColor'"),
+		BaseMaterial);
 
 	// 初始化统计轴线相关数组
 	StatisticalLineMeshes.Empty();
@@ -58,7 +60,7 @@ void AXVLineChart::NotifyActorOnClicked(FKey ButtonPressed)
 	if (HitResult.GetActor())
 	{
 		FVector Result = GetCursorHitRowAndColAndHeight(HitResult);
-			
+
 		int CurrentRow = Result.Y / (YAxisInterval * GetActorScale().Y);
 		LineSelection[CurrentRow] = !LineSelection[CurrentRow];
 
@@ -70,17 +72,17 @@ void AXVLineChart::NotifyActorOnClicked(FKey ButtonPressed)
 				if (!LineSelection[CurrentRow])
 				{
 					ProceduralMeshComponent->ClearMeshSection(CurrentIndex);
-					DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue("EmissiveIntensity", 0);
-					ProceduralMeshComponent->SetMaterial(CurrentIndex,DynamicMaterialInstances[CurrentIndex] );
+					DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
+						"EmissiveIntensity", 0);
+					ProceduralMeshComponent->SetMaterial(
+						CurrentIndex, DynamicMaterialInstances[CurrentIndex]);
 					ProceduralMeshComponent->CreateMeshSection_LinearColor(
-						CurrentIndex,
-						SectionInfos[CurrentIndex].Vertices,
+						CurrentIndex, SectionInfos[CurrentIndex].Vertices,
 						SectionInfos[CurrentIndex].Indices,
 						SectionInfos[CurrentIndex].Normals,
 						SectionInfos[CurrentIndex].UVs,
 						SectionInfos[CurrentIndex].VertexColors,
-						SectionInfos[CurrentIndex].Tangents,
-						true);
+						SectionInfos[CurrentIndex].Tangents, true);
 					LabelComponents[CurrentIndex]->SetVisibility(false);
 					LabelComponents[CurrentIndex]->MarkRenderStateDirty();
 					TotalSelection[CurrentIndex] = false;
@@ -88,23 +90,19 @@ void AXVLineChart::NotifyActorOnClicked(FKey ButtonPressed)
 				else
 				{
 					ProceduralMeshComponent->ClearMeshSection(CurrentIndex);
-					// TODO: Update hover material
 					ProceduralMeshComponent->CreateMeshSection_LinearColor(
-						CurrentIndex,
-						SectionInfos[CurrentIndex].Vertices,
+						CurrentIndex, SectionInfos[CurrentIndex].Vertices,
 						SectionInfos[CurrentIndex].Indices,
 						SectionInfos[CurrentIndex].Normals,
 						SectionInfos[CurrentIndex].UVs,
 						SectionInfos[CurrentIndex].VertexColors,
-						SectionInfos[CurrentIndex].Tangents,
-						true);
+						SectionInfos[CurrentIndex].Tangents, true);
 					TotalSelection[CurrentIndex] = true;
 				}
 			}
 		}
 	}
 }
-
 
 void AXVLineChart::UpdateOnMouseEnterOrLeft()
 {
@@ -115,16 +113,18 @@ void AXVLineChart::UpdateOnMouseEnterOrLeft()
 		if (HitResult.GetActor())
 		{
 			FVector Result = GetCursorHitRowAndColAndHeight(HitResult);
-			
-			int CurrentRow = Result.Y / (YAxisInterval * GetActorScale().Y) ;
-			int CurrentCol = Result.X / (XAxisInterval * GetActorScale().X) ;
+
+			int CurrentRow = Result.Y / (YAxisInterval * GetActorScale().Y);
+			int CurrentCol = Result.X / (XAxisInterval * GetActorScale().X);
 			int CurrentIndex = CurrentRow * ColCounts + CurrentCol;
-	
+
 			if (CurrentIndex < TotalCountOfValue)
 			{
-				if (HoveredIndex != -1 && HoveredIndex != CurrentIndex && !TotalSelection[HoveredIndex])
+				if (HoveredIndex != -1 && HoveredIndex != CurrentIndex &&
+					!TotalSelection[HoveredIndex])
 				{
-					DynamicMaterialInstances[HoveredIndex]->SetScalarParameterValue("EmissiveIntensity", 0);
+					DynamicMaterialInstances[HoveredIndex]->SetScalarParameterValue(
+						"EmissiveIntensity", 0);
 					UpdateMeshSection(HoveredIndex);
 					LabelComponents[HoveredIndex]->SetVisibility(false);
 					LabelComponents[HoveredIndex]->MarkRenderStateDirty();
@@ -132,21 +132,31 @@ void AXVLineChart::UpdateOnMouseEnterOrLeft()
 				if (HoveredIndex != CurrentIndex && !TotalSelection[CurrentIndex])
 				{
 					HoveredIndex = CurrentIndex;
-					DynamicMaterialInstances[HoveredIndex]->SetScalarParameterValue("EmissiveIntensity", EmissiveIntensity);
+					DynamicMaterialInstances[HoveredIndex]->SetScalarParameterValue(
+						"EmissiveIntensity", EmissiveIntensity);
 					UpdateMeshSection(HoveredIndex);
 
-					FRotator CamRotation = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraRotation();
+					FRotator CamRotation = GetWorld()
+					                       ->GetFirstPlayerController()
+					                       ->PlayerCameraManager->GetCameraRotation();
 					CamRotation.Yaw += 180;
 					CamRotation.Pitch *= -1;
 					FRotator TextRotation(CamRotation);
 					LabelComponents[HoveredIndex]->SetWorldRotation(TextRotation);
 
 					FQuat QuatRotation = FQuat(GetActorRotation());
-					FVector Position(XAxisInterval * CurrentCol , YAxisInterval * CurrentRow, 0);
-					FVector NewLocation =GetActorLocation() + QuatRotation.RotateVector(Position + FVector(Width * .5, YAxisInterval*.5,  SectionsHeight[HoveredIndex] + 5))*GetActorScale3D();
-					LabelComponents[HoveredIndex]->SetWorldScale3D(GetActorScale3D() * 0.5f);
+					FVector Position(XAxisInterval * CurrentCol,
+					                 YAxisInterval * CurrentRow, 0);
+					FVector NewLocation =
+						GetActorLocation() +
+						QuatRotation.RotateVector(
+							Position + FVector(Width * .5, YAxisInterval * .5,
+							                   SectionsHeight[HoveredIndex] + 5)) *
+						GetActorScale3D();
+					LabelComponents[HoveredIndex]->SetWorldScale3D(GetActorScale3D() *
+						0.5f);
 					LabelComponents[HoveredIndex]->SetWorldLocation(NewLocation);
-					
+
 					LabelComponents[HoveredIndex]->SetVisibility(true);
 					LabelComponents[HoveredIndex]->MarkRenderStateDirty();
 				}
@@ -158,18 +168,17 @@ void AXVLineChart::UpdateOnMouseEnterOrLeft()
 		if (HoveredIndex != -1 && !TotalSelection[HoveredIndex])
 		{
 			ProceduralMeshComponent->ClearMeshSection(HoveredIndex);
-			DynamicMaterialInstances[HoveredIndex]->SetScalarParameterValue("EmissiveIntensity", 0);
-			ProceduralMeshComponent->SetMaterial(HoveredIndex,DynamicMaterialInstances[HoveredIndex] );
-			
+			DynamicMaterialInstances[HoveredIndex]->SetScalarParameterValue(
+				"EmissiveIntensity", 0);
+			ProceduralMeshComponent->SetMaterial(
+				HoveredIndex, DynamicMaterialInstances[HoveredIndex]);
+
 			ProceduralMeshComponent->CreateMeshSection_LinearColor(
-				HoveredIndex,
-				SectionInfos[HoveredIndex].Vertices,
+				HoveredIndex, SectionInfos[HoveredIndex].Vertices,
 				SectionInfos[HoveredIndex].Indices,
-				SectionInfos[HoveredIndex].Normals,
-				SectionInfos[HoveredIndex].UVs,
+				SectionInfos[HoveredIndex].Normals, SectionInfos[HoveredIndex].UVs,
 				SectionInfos[HoveredIndex].VertexColors,
-				SectionInfos[HoveredIndex].Tangents,
-				true);
+				SectionInfos[HoveredIndex].Tangents, true);
 			LabelComponents[HoveredIndex]->SetVisibility(false);
 			LabelComponents[HoveredIndex]->MarkRenderStateDirty();
 			HoveredIndex = -1;
@@ -194,12 +203,6 @@ void AXVLineChart::BeginPlay()
 			ChartAxis->SetZAxisText(ZText);
 		}
 	}
-	
-	// Z轴自动调整已移至GenerateAllMeshInfo方法中，确保只在数据加载完成后才进行调整
-	// if (bAutoAdjustZAxis)
-	// {
-	// 	AutoAdjustZAxis(ZAxisMarginPercent);
-	// }
 }
 
 // Called every frame
@@ -207,7 +210,7 @@ void AXVLineChart::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if(bEnableEnterAnimation)
+	if (bEnableEnterAnimation)
 	{
 		if (CurrentBuildTime < BuildTime && !IsHidden())
 		{
@@ -217,17 +220,18 @@ void AXVLineChart::Tick(float DeltaTime)
 	}
 	else
 	{
-		if(!bAnimationFinished)
+		if (!bAnimationFinished)
 		{
 			ConstructMesh(1);
 			bAnimationFinished = true;
 		}
 	}
 	UpdateOnMouseEnterOrLeft();
-	
 }
 
-void AXVLineChart::Create3DLineChart(const FString& Data, ELineChartStyle ChartStyle, FColor LineChartColor)
+void AXVLineChart::Create3DLineChart(const FString& Data,
+                                     ELineChartStyle ChartStyle,
+                                     FColor LineChartColor)
 {
 	Set3DLineChart(ChartStyle, LineChartColor);
 
@@ -240,8 +244,7 @@ void AXVLineChart::Create3DLineChart(const FString& Data, ELineChartStyle ChartS
 
 void AXVLineChart::SetValue(const FString& InValue)
 {
-	if (InValue.IsEmpty())
-		return;
+	if (InValue.IsEmpty()) return;
 	XYZs.Empty();
 
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(InValue);
@@ -251,12 +254,12 @@ void AXVLineChart::SetValue(const FString& InValue)
 	TotalCountOfValue = 0;
 	if (FJsonSerializer::Deserialize(Reader, Value3DJsonValueArray))
 	{
-		for (const TSharedPtr<FJsonValue>& Value3DJsonValue : Value3DJsonValueArray)
+		for (const TSharedPtr<FJsonValue>& Value3DJsonValue :
+		     Value3DJsonValueArray)
 		{
 			TArray<TSharedPtr<FJsonValue>> Values = Value3DJsonValue->AsArray();
 
-			if (Values.Num() != 3)
-				return;
+			if (Values.Num() != 3) return;
 			int Y = Values[0]->AsNumber();
 			int X = Values[1]->AsNumber();
 			int V = Values[2]->AsNumber();
@@ -285,14 +288,14 @@ void AXVLineChart::SetValue(const FString& InValue)
 	RowCounts = XYZs.Num();
 	LineSelection.SetNum(RowCounts);
 	TotalSelection.SetNum(TotalCountOfValue);
-	
+
 	DynamicMaterialInstances.Empty();
 	DynamicMaterialInstances.SetNum(TotalCountOfValue + 1);
 	SectionSelectStates.Init(false, TotalCountOfValue + 1);
 	SectionsHeight.SetNum(TotalCountOfValue + 1);
 
-	GenerateAllMeshInfo()
-;}
+	GenerateAllMeshInfo();
+}
 
 void AXVLineChart::ConstructMesh(double Rate)
 {
@@ -306,16 +309,9 @@ void AXVLineChart::ConstructMesh(double Rate)
 
 	UpdateSectionVerticesOfZ(Rate);
 
-	for (size_t CurrentIndex =0; CurrentIndex < TotalCountOfValue; CurrentIndex++)
+	for (int i = 0; i < LODInfos[CurrentLOD].LODCount; ++i)
 	{
-		ProceduralMeshComponent->CreateMeshSection_LinearColor(CurrentIndex,
-																   SectionInfos[CurrentIndex].Vertices,
-																   SectionInfos[CurrentIndex].Indices,
-																   SectionInfos[CurrentIndex].Normals,
-																   SectionInfos[CurrentIndex].UVs,
-																   SectionInfos[CurrentIndex].VertexColors,
-																   SectionInfos[CurrentIndex].Tangents,
-																   true);
+		DrawMeshSection(LODInfos[CurrentLOD].LODOffset + i);
 	}
 }
 
@@ -325,53 +321,80 @@ void AXVLineChart::GenerateAllMeshInfo()
 	{
 		return;
 	}
-	
+
 	// 如果启用了自动调整Z轴，先进行自动调整
 	if (bAutoAdjustZAxis)
 	{
 		AutoAdjustZAxis(ZAxisMarginPercent);
 	}
-	
+
 	PrepareMeshSections();
-	
-	int CurrentIndex = 0;
-	for (int IndexOfY = 0; IndexOfY < RowCounts; IndexOfY++)
+
+	int LODOffset = 0;
+	for (int LODIndex = 0; LODIndex < GenerateLODCount; ++LODIndex)
 	{
-		CurrentRolCounts = XYZs[IndexOfY].Num();
-
-		for (int IndexOfX = 0; IndexOfX < CurrentRolCounts; ++IndexOfX)
+		int CurrentIndex = 0;
+		for (int RowIndex = 0; RowIndex < RowCounts; RowIndex++)
 		{
-			FVector Position(XAxisInterval * IndexOfX, YAxisInterval * IndexOfY, 0);
+			CurColCount = XYZs[RowIndex].Num();
 
-			int NewIndexOfX = FMath::Min(CurrentRolCounts - 1, IndexOfX + 1);
-
-			// 获取原始高度
-			float RawHeight = XYZs[IndexOfY][IndexOfX];
-			float RawNextHeight = XYZs[IndexOfY][NewIndexOfX];
-			
-			// 应用Z轴调整
-			float AdjustedHeight = CalculateAdjustedHeight(RawHeight);
-			float AdjustedNextHeight = CalculateAdjustedHeight(RawNextHeight);
-			
-			SectionsHeight[CurrentIndex] = FMath::Max(AdjustedHeight, AdjustedNextHeight);
-
-			if(LineChartStyle != ELineChartStyle::Point)
+			for (int ColIndex = 0; ColIndex < CurColCount; ColIndex += LODIndex + 1)
 			{
-				XVChartUtils::CreateBox(SectionInfos, CurrentIndex, Position, YAxisInterval, Width, AdjustedHeight, AdjustedNextHeight, Colors[IndexOfY % Colors.Num()]);
+				FVector Position(XAxisInterval * ColIndex, YAxisInterval * RowIndex, 0);
+
+				int NewColIndex = FMath::Min(CurColCount - 1, ColIndex + LODIndex + 1);
+
+				// 获取原始高度
+				float RawHeight = XYZs[RowIndex][ColIndex];
+				float RawNextHeight = XYZs[RowIndex][NewColIndex];
+
+				// 应用Z轴调整
+				float AdjustedHeight = CalculateAdjustedHeight(RawHeight);
+				float AdjustedNextHeight = CalculateAdjustedHeight(RawNextHeight);
+
+				if (LODIndex == 0)
+				{
+					SectionsHeight[CurrentIndex] =
+						FMath::Max(AdjustedHeight, AdjustedNextHeight);
+				}
+
+				if (LineChartStyle != ELineChartStyle::Point)
+				{
+					XVChartUtils::CreateBox(SectionInfos, CurrentIndex, Position,
+					                        YAxisInterval, Width, AdjustedHeight,
+					                        AdjustedNextHeight,
+					                        Colors[RowIndex % Colors.Num()]);
+				}
+				else
+				{
+					int LODNumSphereSlices = FMath::Max(3, NumSphereSlices - LODIndex);
+					int LODNumSphereStacks = FMath::Max(2, NumSphereStacks - LODIndex);
+
+					XVChartUtils::CreateSphere(SectionInfos, CurrentIndex,
+					                           Position + FVector(0, 0, AdjustedHeight),
+					                           SphereRadius, LODNumSphereSlices,
+					                           LODNumSphereStacks,
+					                           Colors[RowIndex % Colors.Num()]);
+				}
+
+				DynamicMaterialInstances[CurrentIndex] =
+					UMaterialInstanceDynamic::Create(BaseMaterial, this);
+				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
+					TEXT("EmissiveColor"), EmissiveColor);
+				ProceduralMeshComponent->SetMaterial(
+					CurrentIndex, DynamicMaterialInstances[CurrentIndex]);
+
+				// 使用原始高度值作为标签文本
+				LabelComponents[CurrentIndex] = XVChartUtils::CreateTextRenderComponent(
+					this, FText::FromString(FString::Printf(TEXT("%.2f"), RawHeight)),
+					FColor::Cyan, false);
+
+				CurrentIndex++;
 			}
-			else
-			{
-				XVChartUtils::CreateSphere(SectionInfos, CurrentIndex, Position + FVector(0, 0, AdjustedHeight), SphereRadius, NumSphereSlices, NumSphereStacks, Colors[IndexOfY % Colors.Num()]);
-			}
-			DynamicMaterialInstances[CurrentIndex] = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-			DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(TEXT("EmissiveColor"), EmissiveColor);
-			ProceduralMeshComponent->SetMaterial(CurrentIndex, DynamicMaterialInstances[CurrentIndex]);
-			
-			// 使用原始高度值作为标签文本
-			LabelComponents[CurrentIndex] = XVChartUtils::CreateTextRenderComponent(this, FText::FromString(FString::Printf(TEXT("%.2f"), RawHeight)), FColor::Cyan, false);
-			
-			CurrentIndex++;
 		}
+		LODInfos[LODIndex].LODCount = CurrentIndex;
+		LODInfos[LODIndex].LODOffset = LODOffset;
+		LODOffset += CurrentIndex;
 	}
 
 	// 如果启用了参考值高亮，应用高亮效果
@@ -379,7 +402,7 @@ void AXVLineChart::GenerateAllMeshInfo()
 	{
 		ApplyReferenceHighlight();
 	}
-	
+
 	// 如果启用了统计轴线，应用统计轴线
 	if (bEnableStatisticalLines)
 	{
@@ -389,31 +412,30 @@ void AXVLineChart::GenerateAllMeshInfo()
 }
 
 #if WITH_EDITOR
-void AXVLineChart::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+void AXVLineChart::PostEditChangeProperty(
+	FPropertyChangedEvent& PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
-
-	
 }
 #endif
 
-
-void AXVLineChart::Set3DLineChart(ELineChartStyle InLineChartStyle, FColor LineChartColor)
+void AXVLineChart::Set3DLineChart(ELineChartStyle InLineChartStyle,
+                                  FColor LineChartColor)
 {
 	LineChartStyle = InLineChartStyle;
 	switch (LineChartStyle)
 	{
 	case ELineChartStyle::Base:
-		
+
 		break;
 	case ELineChartStyle::Gradient:
-		
+
 		break;
 	case ELineChartStyle::Transparent:
-		
+
 		break;
 	default:
-		
+
 		break;
 	}
 }
@@ -428,33 +450,37 @@ void AXVLineChart::ApplyReferenceHighlight()
 
 	// 遍历所有线段/点，检查是否符合参考值条件
 	size_t CurrentIndex = 0;
-	for (int32 RowIndex = 0; RowIndex < XYZs.Num(); RowIndex++)
+	for (int RowIndex = 0; RowIndex < XYZs.Num(); RowIndex++)
 	{
 		const auto& Row = XYZs[RowIndex];
 		for (const auto& XZPair : Row)
 		{
 			// 使用原始高度值进行比较，而不是调整后的高度
 			int RawValue = XZPair.Value; // Z值
-			
+
 			// 检查值是否符合参考值条件
 			bool bMatchesReference = CheckAgainstReference(RawValue);
-			
+
 			if (bMatchesReference)
 			{
 				// 符合条件，应用高亮颜色和发光效果
-				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", ReferenceHighlightColor);
-				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue("EmissiveIntensity", EmissiveIntensity);
+				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
+					"EmissiveColor", ReferenceHighlightColor);
+				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
+					"EmissiveIntensity", EmissiveIntensity);
 			}
 			else
 			{
 				// 不符合条件，恢复默认颜色和发光效果
-				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
-				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue("EmissiveIntensity", 0);
+				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
+					"EmissiveColor", EmissiveColor);
+				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
+					"EmissiveIntensity", 0);
 			}
-			
+
 			// 更新网格部分
 			UpdateMeshSection(CurrentIndex);
-			
+
 			CurrentIndex++;
 		}
 	}
@@ -472,7 +498,7 @@ void AXVLineChart::ApplyStatisticalLines()
 		}
 	}
 	StatisticalLineMeshes.Empty();
-	
+
 	for (auto* Label : StatisticalLineLabels)
 	{
 		if (Label)
@@ -481,16 +507,16 @@ void AXVLineChart::ApplyStatisticalLines()
 		}
 	}
 	StatisticalLineLabels.Empty();
-	
+
 	if (!bEnableStatisticalLines || StatisticalLines.Num() == 0)
 	{
 		return;
 	}
-	
+
 	// 计算图表的总宽度和高度
 	float ChartWidth = MaxX * XAxisInterval;
 	float ChartHeight = MaxY * YAxisInterval;
-	
+
 	// 为每条统计轴线创建可视化效果
 	for (const auto& Line : StatisticalLines)
 	{
@@ -502,7 +528,7 @@ void AXVLineChart::ApplyStatisticalLines()
 TArray<float> AXVLineChart::GetAllDataValues() const
 {
 	TArray<float> Values;
-	
+
 	// 收集所有Z值（高度值）
 	for (const auto& Row : XYZs)
 	{
@@ -511,29 +537,31 @@ TArray<float> AXVLineChart::GetAllDataValues() const
 			Values.Add(Item.Value);
 		}
 	}
-	
+
 	return Values;
 }
 
 // 创建一条统计轴线
 void AXVLineChart::CreateStatisticalLine(const FXVStatisticalLine& LineInfo)
 {
-	if (LineInfo.LineType == EStatisticalLineType::None || LineInfo.ActualValue <= 0)
+	if (LineInfo.LineType == EStatisticalLineType::None ||
+		LineInfo.ActualValue <= 0)
 	{
 		return;
 	}
-	
+
 	// 创建一个新的程序化网格组件用于绘制轴线
-	UProceduralMeshComponent* LineMesh = NewObject<UProceduralMeshComponent>(this);
+	UProceduralMeshComponent* LineMesh =
+		NewObject<UProceduralMeshComponent>(this);
 	LineMesh->SetupAttachment(RootComponent);
 	LineMesh->RegisterComponent();
-	
+
 	// 计算轴线位置 - 使用调整后的高度
 	float RawLineHeight = LineInfo.ActualValue;
 	float LineHeight = CalculateAdjustedHeight(RawLineHeight);
 	float ChartWidth = (MaxX + 1) * XAxisInterval;
 	float ChartLength = (MaxY + 1) * YAxisInterval;
-	
+
 	// 创建轴线几何体
 	TArray<FVector> Vertices;
 	TArray<int32> Triangles;
@@ -541,46 +569,70 @@ void AXVLineChart::CreateStatisticalLine(const FXVStatisticalLine& LineInfo)
 	TArray<FVector2D> UV0;
 	TArray<FLinearColor> VertexColors;
 	TArray<FProcMeshTangent> Tangents;
-	
+
 	// 轴线的厚度
 	float LineThickness = LineInfo.LineWidth;
-	
+
 	// 创建一个水平平面作为轴线
 	Vertices.Add(FVector(0, 0, LineHeight));
 	Vertices.Add(FVector(ChartWidth, 0, LineHeight));
 	Vertices.Add(FVector(ChartWidth, ChartLength, LineHeight));
 	Vertices.Add(FVector(0, ChartLength, LineHeight));
-	
+
 	Vertices.Add(FVector(0, 0, LineHeight + LineThickness));
 	Vertices.Add(FVector(ChartWidth, 0, LineHeight + LineThickness));
 	Vertices.Add(FVector(ChartWidth, ChartLength, LineHeight + LineThickness));
 	Vertices.Add(FVector(0, ChartLength, LineHeight + LineThickness));
-	
+
 	// 添加三角形（两个面）
 	// 底面
-	Triangles.Add(0); Triangles.Add(1); Triangles.Add(2);
-	Triangles.Add(0); Triangles.Add(2); Triangles.Add(3);
-	
+	Triangles.Add(0);
+	Triangles.Add(1);
+	Triangles.Add(2);
+	Triangles.Add(0);
+	Triangles.Add(2);
+	Triangles.Add(3);
+
 	// 顶面
-	Triangles.Add(4); Triangles.Add(6); Triangles.Add(5);
-	Triangles.Add(4); Triangles.Add(7); Triangles.Add(6);
-	
+	Triangles.Add(4);
+	Triangles.Add(6);
+	Triangles.Add(5);
+	Triangles.Add(4);
+	Triangles.Add(7);
+	Triangles.Add(6);
+
 	// 侧面1
-	Triangles.Add(0); Triangles.Add(4); Triangles.Add(1);
-	Triangles.Add(1); Triangles.Add(4); Triangles.Add(5);
-	
+	Triangles.Add(0);
+	Triangles.Add(4);
+	Triangles.Add(1);
+	Triangles.Add(1);
+	Triangles.Add(4);
+	Triangles.Add(5);
+
 	// 侧面2
-	Triangles.Add(1); Triangles.Add(5); Triangles.Add(2);
-	Triangles.Add(2); Triangles.Add(5); Triangles.Add(6);
-	
+	Triangles.Add(1);
+	Triangles.Add(5);
+	Triangles.Add(2);
+	Triangles.Add(2);
+	Triangles.Add(5);
+	Triangles.Add(6);
+
 	// 侧面3
-	Triangles.Add(2); Triangles.Add(6); Triangles.Add(3);
-	Triangles.Add(3); Triangles.Add(6); Triangles.Add(7);
-	
+	Triangles.Add(2);
+	Triangles.Add(6);
+	Triangles.Add(3);
+	Triangles.Add(3);
+	Triangles.Add(6);
+	Triangles.Add(7);
+
 	// 侧面4
-	Triangles.Add(3); Triangles.Add(7); Triangles.Add(0);
-	Triangles.Add(0); Triangles.Add(7); Triangles.Add(4);
-	
+	Triangles.Add(3);
+	Triangles.Add(7);
+	Triangles.Add(0);
+	Triangles.Add(0);
+	Triangles.Add(7);
+	Triangles.Add(4);
+
 	// 设置法线、UV和颜色
 	for (int32 i = 0; i < Vertices.Num(); ++i)
 	{
@@ -589,42 +641,46 @@ void AXVLineChart::CreateStatisticalLine(const FXVStatisticalLine& LineInfo)
 		VertexColors.Add(LineInfo.LineColor);
 		Tangents.Add(FProcMeshTangent(1, 0, 0));
 	}
-	
+
 	// 创建网格
-	LineMesh->CreateMeshSection_LinearColor(0, Vertices, Triangles, Normals, UV0, VertexColors, Tangents, true);
-	
+	LineMesh->CreateMeshSection_LinearColor(0, Vertices, Triangles, Normals, UV0,
+	                                        VertexColors, Tangents, true);
+
 	// 创建材质实例
-	UMaterialInstanceDynamic* LineMaterial = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+	UMaterialInstanceDynamic* LineMaterial =
+		UMaterialInstanceDynamic::Create(BaseMaterial, this);
 	LineMaterial->SetVectorParameterValue("EmissiveColor", LineInfo.LineColor);
 	LineMaterial->SetScalarParameterValue("EmissiveIntensity", 1.0f);
 	LineMesh->SetMaterial(0, LineMaterial);
-	
+
 	// 如果需要标签，则创建文本组件
 	if (LineInfo.bShowLabel)
 	{
 		UTextRenderComponent* Label = NewObject<UTextRenderComponent>(this);
 		Label->SetupAttachment(RootComponent);
 		Label->RegisterComponent();
-		
+
 		// 设置标签文本 - 显示原始值，而非调整后的高度
 		FString LabelText = LineInfo.LabelFormat;
-		LabelText = LabelText.Replace(TEXT("{value}"), *FString::Printf(TEXT("%.2f"), RawLineHeight));
+		LabelText = LabelText.Replace(
+			TEXT("{value}"), *FString::Printf(TEXT("%.2f"), RawLineHeight));
 		Label->SetText(FText::FromString(LabelText));
-		
+
 		// 设置标签外观
 		Label->SetTextRenderColor(LineInfo.LineColor.ToFColor(true));
-		Label->SetWorldSize(10.0f);  // 设置文本大小
+		Label->SetWorldSize(10.0f); // 设置文本大小
 		Label->SetHorizontalAlignment(EHorizTextAligment::EHTA_Left);
 		Label->SetVerticalAlignment(EVerticalTextAligment::EVRTA_TextBottom);
-		
+
 		// 设置标签位置（对于线图，可能需要调整位置）
-		Label->SetWorldLocation(FVector(0, ChartLength * 0.5f, LineHeight + LineThickness + 1.0f));
-		Label->SetWorldRotation(FRotator(90.0f, 0.0f, 90.0f));  // 使文本朝向正确
-		
+		Label->SetWorldLocation(
+			FVector(0, ChartLength * 0.5f, LineHeight + LineThickness + 1.0f));
+		Label->SetWorldRotation(FRotator(90.0f, 0.0f, 90.0f)); // 使文本朝向正确
+
 		// 保存标签组件
 		StatisticalLineLabels.Add(Label);
 	}
-	
+
 	// 保存轴线网格组件
 	StatisticalLineMeshes.Add(LineMesh);
 }

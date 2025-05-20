@@ -16,8 +16,7 @@ AXVBarChart::AXVBarChart()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-
-
+	
 	XAxisInterval = 13;
 	YAxisInterval = 13;
 	Width = 10;
@@ -136,9 +135,9 @@ void AXVBarChart::Create3DHistogramChart(const FString& Data, EHistogramChartSty
 {
 	Set3DHistogramChart(InHistogramChartStyle, InHistogramChartShape);
 	SetValue(Data);
-#if WITH_EDITOR
-	ConstructMesh(1);
-#endif
+// #if WITH_EDITOR
+// 	ConstructMesh(1);
+// #endif
 	
 }
 
@@ -235,16 +234,29 @@ void AXVBarChart::GenerateAllMeshInfo()
 	
 	PrepareMeshSections();
 	// 创建对应柱体
+	size_t ActualSectionInfoCount = 0;
+	for (size_t LODIndex = 0; LODIndex < GenerateLODCount; ++LODIndex)
 	{
+		auto& LODInfo = LODInfos[LODIndex];
+		LODInfo.LODOffset = ActualSectionInfoCount;
 		size_t CurrentIndex = 0;
-		for (size_t IndexOfY = 0; IndexOfY < RowCounts; IndexOfY++)
+		for (size_t IndexOfY = 0; IndexOfY < RowCounts; IndexOfY += LODIndex + 1)
 		{
-			for (size_t IndexOfX = 0; IndexOfX < XYZs[IndexOfY].Num(); IndexOfX++)
+			for (size_t IndexOfX = 0; IndexOfX < XYZs[IndexOfY].Num(); )
 			{
 				FVector Position(XAxisInterval * IndexOfX, YAxisInterval * IndexOfY, 0);
+
+				float MergedHeight = 0;
+				for (size_t StepX = 0; StepX <= LODIndex &&  IndexOfX < XYZs[IndexOfY].Num(); ++StepX,++IndexOfX)
+				{
+					for (size_t StepY = 0; StepY <= LODIndex && IndexOfY  + StepY< RowCounts; ++StepY)
+					{
+						MergedHeight += XYZs[IndexOfY + StepY][IndexOfX];
+					}
+				}
 				
 				// 获取原始高度
-				float RawHeight = XYZs[IndexOfY][IndexOfX];
+				float RawHeight = MergedHeight / ((LODIndex + 1) * (LODIndex + 1));
 				
 				// 应用Z轴调整
 				float AdjustedHeight = CalculateAdjustedHeight(RawHeight) + 0.1;
@@ -252,11 +264,14 @@ void AXVBarChart::GenerateAllMeshInfo()
 				// 计算原始高度的百分比(相对于最大值)
 				double Percentage = static_cast<double>(RawHeight) / static_cast<double>(MaxZ);
 				int ColorIndex = FMath::Floor(Percentage * (Colors.Num() - 1));
-				
+
+				size_t CreatedSectionIndex = CurrentIndex + ActualSectionInfoCount;
+
+				// TODO: Implement more styles
 				switch (HistogramChartShape)
 				{
 				case EHistogramChartShape::Bar:
-					XVChartUtils::CreateBox(SectionInfos, CurrentIndex, Position, Length, Width, AdjustedHeight, AdjustedHeight, Colors[ColorIndex]);
+					XVChartUtils::CreateBox(SectionInfos, CreatedSectionIndex, Position, Length * (LODIndex + 1), Width * (LODIndex + 1), AdjustedHeight, AdjustedHeight, Colors[ColorIndex]);
 					break;
 				case EHistogramChartShape::Circle:
 					UE_LOG(LogTemp, Warning, TEXT("Circle shaped not implemented!"));
@@ -269,17 +284,22 @@ void AXVBarChart::GenerateAllMeshInfo()
 					break;
 				}
 
-				DynamicMaterialInstances[CurrentIndex] = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
-				ProceduralMeshComponent->SetMaterial(CurrentIndex, DynamicMaterialInstances[CurrentIndex]);
+				if (LODIndex == 0)
+				{
+					DynamicMaterialInstances[CurrentIndex] = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+					DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
+				}
+				ProceduralMeshComponent->SetMaterial(CreatedSectionIndex, DynamicMaterialInstances[CurrentIndex]);
 				SectionsHeight[CurrentIndex] = AdjustedHeight;
 				
 				// 使用原始高度值作为标签文本
 				LabelComponents[CurrentIndex] = XVChartUtils::CreateTextRenderComponent(this, FText::FromString(FString::Printf(TEXT("%.2f"), RawHeight)), FColor::Cyan, false);
 			
-				CurrentIndex++;
+				++CurrentIndex;
 			}
 		}
+		ActualSectionInfoCount += CurrentIndex;
+		LODInfo.LODCount = CurrentIndex;
 	}
 	
 	// 如果启用了参考值高亮，应用高亮效果
@@ -321,6 +341,13 @@ void AXVBarChart::DrawWithGPU()
 	}
 }
 
+void AXVBarChart::GenerateLOD()
+{
+	Super::GenerateLOD();
+
+	
+}
+
 void AXVBarChart::ConstructMesh(double Rate)
 {
 	Super::ConstructMesh(Rate);
@@ -334,9 +361,9 @@ void AXVBarChart::ConstructMesh(double Rate)
 
 	UpdateSectionVerticesOfZ(Rate);
 
-	for (size_t CurrentIndex = 0; CurrentIndex < TotalCountOfValue; CurrentIndex++)
+	for (int i = 0; i < LODInfos[CurrentLOD].LODCount; ++i)
 	{
-		DrawMeshSection(CurrentIndex);
+		DrawMeshSection(LODInfos[CurrentLOD].LODOffset + i);
 	}
 }
 

@@ -114,6 +114,8 @@ public:
 	virtual void GenerateAllMeshInfo() override;
 
 	virtual void DrawWithGPU() override;
+
+	virtual void GenerateLOD() override;
 	
 	/**
 	 * 应用参考值高亮到柱状图

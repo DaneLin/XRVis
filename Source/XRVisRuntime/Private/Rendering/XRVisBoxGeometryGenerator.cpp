@@ -1,6 +1,5 @@
 #include "Rendering/XRVisBoxGeometryGenerator.h"
 
-#include "PropertyEditorModule.h"
 #include "Rendering/XRVisRenderUtils.h"
 #include "RenderGraphBuilder.h"
 

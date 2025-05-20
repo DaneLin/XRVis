@@ -82,6 +82,11 @@ void AXVChartBase::UpdateOnMouseEnterOrLeft()
 {
 }
 
+uint32_t AXVChartBase::GetSectionIndexOfLOD(uint32_t SectionIndex)
+{
+	return SectionIndex + LODInfos[CurrentLOD].LODOffset;
+}
+
 void AXVChartBase::SetValue(const FString& InValue)
 {
 }
@@ -100,7 +105,10 @@ void AXVChartBase::PrepareMeshSections()
 {
 	ProceduralMeshComponent->ClearAllMeshSections();
 	ProceduralMeshComponent->ClearCollisionConvexMeshes();
+	LODInfos.Empty();
+	LODInfos.SetNum(GenerateLODCount);
 	SectionInfos.Empty();
+	// TODO: Bigger than actually needed
 	SectionInfos.SetNum( GenerateLODCount * TotalCountOfValue + 1);
 	LabelComponents.Empty();
 	LabelComponents.SetNum(TotalCountOfValue);
@@ -109,11 +117,15 @@ void AXVChartBase::PrepareMeshSections()
 
 void AXVChartBase::DrawMeshLOD(int LODLevel)
 {
-	check(LODLevel < GenerateLODCount);
-
-	for (int Index = 0; Index < LODInfos[LODLevel].LODCount; ++Index)
+	if (bEnableGPU)
 	{
-		int SectionIndex = Index + LODInfos[LODLevel].LODOffset;
+		return;
+	}
+	check(LODLevel < GenerateLODCount);
+	CurrentLOD = LODLevel;
+	for (int Index = 0; Index < LODInfos[CurrentLOD].LODCount; ++Index)
+	{
+		int SectionIndex = Index + LODInfos[CurrentLOD].LODOffset;
 		DrawMeshSection(SectionIndex);
 	}
 }

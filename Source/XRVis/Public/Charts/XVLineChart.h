@@ -141,7 +141,7 @@ private:
 	
 	TMap<int, TMap<int, int>> XYZs;
 	int MaxX, MinX, MaxY,MinY, MaxZ, MinZ;
-	int CurrentRolCounts;
+	int CurColCount;
 	int RowCounts, ColCounts;
 
 	int HoveredIndex = -1;

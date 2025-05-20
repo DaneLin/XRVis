@@ -244,6 +244,8 @@ public:
 	virtual void NotifyActorEndCursorOver() override;
 	virtual void UpdateOnMouseEnterOrLeft();
 
+	uint32_t GetSectionIndexOfLOD(uint32_t SectionIndex);
+	
 	// 数据加载相关函数
 	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
 	virtual bool LoadDataFromFile(const FString& FilePath);
