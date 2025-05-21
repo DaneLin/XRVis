@@ -119,6 +119,52 @@ struct FXVChartPropertyMapping
 	FString ValueProperty;
 };
 
+// 添加值范围触发条件枚举
+UENUM(BlueprintType)
+enum class EValueTriggerConditionType : uint8
+{
+	Equal UMETA(DisplayName="等于指定值"),
+	NotEqual UMETA(DisplayName="不等于指定值"),
+	Greater UMETA(DisplayName="大于指定值"),
+	Less UMETA(DisplayName="小于指定值"),
+	GreaterOrEqual UMETA(DisplayName="大于等于指定值"),
+	LessOrEqual UMETA(DisplayName="小于等于指定值"),
+	Range UMETA(DisplayName="在指定范围内"),
+	NotInRange UMETA(DisplayName="不在指定范围内")
+};
+
+// 值触发条件结构体
+USTRUCT(BlueprintType)
+struct FValueTriggerCondition
+{
+	GENERATED_BODY()
+
+	// 条件类型
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Value Trigger")
+	EValueTriggerConditionType ConditionType = EValueTriggerConditionType::Greater;
+
+	// 参考值
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Value Trigger")
+	float ReferenceValue = 0.0f;
+
+	// 范围上限值（仅当ConditionType为Range或NotInRange时使用）
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Value Trigger", 
+		meta=(EditCondition="ConditionType==EValueTriggerConditionType::Range||ConditionType==EValueTriggerConditionType::NotInRange"))
+	float UpperBoundValue = 100.0f;
+
+	// 高亮颜色
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Value Trigger")
+	FLinearColor HighlightColor = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f);
+
+	// 条件名称（用于标识）
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Value Trigger")
+	FString ConditionName = TEXT("新触发条件");
+
+	// 是否启用
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Value Trigger")
+	bool bEnabled = true;
+};
+
 UCLASS(Blueprintable)
 class XRVIS_API AXVChartBase : public AActor
 {
@@ -218,7 +264,13 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD相机更新大小"))
 	TArray<float> LODSwitchSize;
 
+	/* 触发条件列表 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Trigger Conditions", meta=(ToolTip="值触发条件列表"))
+	TArray<FValueTriggerCondition> ValueTriggerConditions;
 
+	/* 是否启用触发条件 */
+	UPROPERTY(EditAnywhere, Category = "Chart Property | Trigger Conditions", meta=(ToolTip="是否启用触发条件"))
+	bool bEnableValueTriggers = false;
 
 public:
 	// Sets default values for this actor's properties
@@ -420,6 +472,47 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Chart Property | LOD")
 	virtual void UpdateLOD();
+
+	/**
+	 * 检查值是否满足任一触发条件
+	 * @param ValueToCheck - 要检查的值
+	 * @param OutColor - 如果满足条件，输出对应的颜色
+	 * @return 如果满足任一条件返回true，否则返回false
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Trigger Conditions")
+	virtual bool CheckValueTriggerConditions(float ValueToCheck, FLinearColor& OutColor) const;
+
+	/**
+	 * 添加值触发条件
+	 * @param ConditionType - 条件类型
+	 * @param ReferenceValue - 参考值
+	 * @param HighlightColor - 高亮颜色
+	 * @param UpperBoundValue - 范围上限值(可选)
+	 * @param ConditionName - 条件名称(可选)
+	 * @return 新添加的条件索引
+	 */
+	virtual int AddValueTriggerCondition(EValueTriggerConditionType ConditionType, float ReferenceValue_, 
+		FLinearColor HighlightColor, float UpperBoundValue = 100.0f, const FString& ConditionName = TEXT("新触发条件"));
+
+	/**
+	 * 移除值触发条件
+	 * @param Index - 要移除的条件索引
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Trigger Conditions")
+	virtual void RemoveValueTriggerCondition(int32 Index);
+
+	/**
+	 * 应用值触发条件到图表
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Trigger Conditions")
+	virtual void ApplyValueTriggerConditions();
+
+	/**
+	 * 设置是否启用值触发条件
+	 * @param bEnable - 是否启用值触发条件
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Trigger Conditions")
+	virtual void SetEnableValueTriggers(bool bEnable);
 
 protected:
 	// Called when the game starts or when spawned

@@ -397,6 +397,12 @@ void AXVLineChart::GenerateAllMeshInfo()
 		ApplyReferenceHighlight();
 	}
 
+	// 如果启用了值触发条件，应用触发条件
+	if (bEnableValueTriggers)
+	{
+		ApplyValueTriggerConditions();
+	}
+
 	// 如果启用了统计轴线，应用统计轴线
 	if (bEnableStatisticalLines)
 	{
@@ -677,4 +683,51 @@ void AXVLineChart::CreateStatisticalLine(const FXVStatisticalLine& LineInfo)
 
 	// 保存轴线网格组件
 	StatisticalLineMeshes.Add(LineMesh);
+}
+
+// 应用值触发条件到折线图
+void AXVLineChart::ApplyValueTriggerConditions()
+{
+	if (!bEnableValueTriggers || TotalCountOfValue == 0 || ValueTriggerConditions.Num() == 0)
+	{
+		return;
+	}
+
+	// 遍历所有线段/点，检查是否符合触发条件
+	size_t CurrentIndex = 0;
+	for (int RowIndex = 0; RowIndex < XYZs.Num(); RowIndex++)
+	{
+		const auto& Row = XYZs[RowIndex];
+		for (const auto& XZPair : Row)
+		{
+			// 使用原始高度值进行比较
+			int RawValue = XZPair.Value; // Z值
+			
+			// 检查值是否满足任何触发条件
+			FLinearColor HighlightColor;
+			bool bMatchesTrigger = CheckValueTriggerConditions(RawValue, HighlightColor);
+			
+			if (bMatchesTrigger)
+			{
+				// 符合条件，应用高亮颜色和发光效果
+				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
+					"EmissiveColor", HighlightColor);
+				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
+					"EmissiveIntensity", EmissiveIntensity);
+			}
+			else
+			{
+				// 不符合条件，恢复默认颜色和发光效果
+				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
+					"EmissiveColor", EmissiveColor);
+				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
+					"EmissiveIntensity", 0);
+			}
+			
+			// 更新网格部分
+			UpdateMeshSection(CurrentIndex);
+			
+			CurrentIndex++;
+		}
+	}
 }

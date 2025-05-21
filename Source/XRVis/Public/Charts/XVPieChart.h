@@ -100,6 +100,16 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	/**
+	 * 应用值触发条件到饼图
+	 */
+	virtual void ApplyValueTriggerConditions() override;
+	
+	/**
+	 * 获取所有数据值
+	 */
+	virtual TArray<float> GetAllDataValues() const override;
+
+	/**
 	 * 基于三维数据在指定坐标系内创建饼状图。
 	 * @param Data - 用于生成三维图的数据，键值对形式。
 	 * @param ChartStyle - 设置生成的三维饼状图的样式。

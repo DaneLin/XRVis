@@ -60,6 +60,11 @@ public:
 	virtual void ApplyStatisticalLines() override;
 	
 	/**
+	 * 应用值触发条件到折线图
+	 */
+	virtual void ApplyValueTriggerConditions() override;
+	
+	/**
 	 * 获取所有数据值
 	 */
 	virtual TArray<float> GetAllDataValues() const override;

@@ -630,3 +630,45 @@ void AXVBarChart::CreateStatisticalLine(const FXVStatisticalLine& LineInfo)
 	// 保存轴线网格组件
 	StatisticalLineMeshes.Add(LineMesh);
 }
+
+// 应用值触发条件到柱状图
+void AXVBarChart::ApplyValueTriggerConditions()
+{
+	if (!bEnableValueTriggers || TotalCountOfValue == 0 || ValueTriggerConditions.Num() == 0)
+	{
+		return;
+	}
+
+	// 遍历所有柱子，检查是否符合触发条件
+	size_t CurrentIndex = 0;
+	for (size_t IndexOfY = 0; IndexOfY < RowCounts; IndexOfY++)
+	{
+		for (size_t IndexOfX = 0; IndexOfX < XYZs[IndexOfY].Num(); IndexOfX++)
+		{
+			// 获取原始高度值
+			float RawValue = XYZs[IndexOfY][IndexOfX];
+			
+			// 检查值是否满足任何触发条件
+			FLinearColor HighlightColor;
+			bool bMatchesTrigger = CheckValueTriggerConditions(RawValue, HighlightColor);
+			
+			if (bMatchesTrigger)
+			{
+				// 符合条件，应用高亮颜色和发光效果
+				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", HighlightColor);
+				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue("EmissiveIntensity", EmissiveIntensity);
+			}
+			else
+			{
+				// 不符合条件，恢复默认颜色和发光效果
+				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
+				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue("EmissiveIntensity", 0);
+			}
+			
+			// 更新网格部分
+			UpdateMeshSection(CurrentIndex);
+			
+			CurrentIndex++;
+		}
+	}
+}

@@ -1098,3 +1098,52 @@ void AXVPieChart::CalculateLabelPosition(
 		       OutLeaderLineEnd.X, OutLeaderLineEnd.Y, OutLeaderLineEnd.Z);
 	}
 }
+
+// 应用值触发条件到饼图
+void AXVPieChart::ApplyValueTriggerConditions()
+{
+	if (!bEnableValueTriggers || TotalCountOfValue == 0 || ValueTriggerConditions.Num() == 0)
+	{
+		return;
+	}
+
+	// 遍历所有饼图区块，检查是否符合触发条件
+	for (int32 i = 0; i < TotalCountOfValue; ++i)
+	{
+		// 获取区块值
+		float SectionValue = SectionValues[i];
+		
+		// 检查值是否满足任何触发条件
+		FLinearColor HighlightColor;
+		bool bMatchesTrigger = CheckValueTriggerConditions(SectionValue, HighlightColor);
+		
+		if (bMatchesTrigger)
+		{
+			// 符合条件，高亮显示该区块
+			Highlight(i, EmissiveIntensity);
+			
+			// 更改区块颜色（可选）
+			if (DynamicMaterialInstances.IsValidIndex(i))
+			{
+				DynamicMaterialInstances[i]->SetVectorParameterValue("EmissiveColor", HighlightColor);
+			}
+		}
+		else
+		{
+			// 不符合条件，重置区块状态
+			Highlight(i, 0.0f);
+			
+			// 恢复区块原始颜色（可选）
+			if (DynamicMaterialInstances.IsValidIndex(i))
+			{
+				DynamicMaterialInstances[i]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
+			}
+		}
+	}
+}
+
+// 获取所有数据值
+TArray<float> AXVPieChart::GetAllDataValues() const
+{
+	return SectionValues;
+}

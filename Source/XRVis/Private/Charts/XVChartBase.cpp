@@ -35,6 +35,9 @@ AXVChartBase::AXVChartBase()
 	ReferenceComparisonType = EReferenceComparisonType::Greater;
 	bEnableReferenceHighlight = false;
 
+	// 初始化触发条件相关属性
+	bEnableValueTriggers = false;
+
 	// 初始化统计轴线相关属性
 	bEnableStatisticalLines = false;
 
@@ -241,6 +244,12 @@ void AXVChartBase::BeginPlay()
 	if (bEnableReferenceHighlight)
 	{
 		ApplyReferenceHighlight();
+	}
+
+	// 如果启用了触发条件，应用触发条件
+	if (bEnableValueTriggers)
+	{
+		ApplyValueTriggerConditions();
 	}
 
 	// 如果启用了统计轴线，应用统计轴线
@@ -1318,5 +1327,136 @@ void AXVChartBase::UpdateLOD()
 	default:
 		UE_LOG(LogTemp, Warning, TEXT("Please select correct lod type"));
 		break;
+	}
+}
+
+bool AXVChartBase::CheckValueTriggerConditions(float ValueToCheck, FLinearColor& OutColor) const
+{
+	// 如果触发条件未启用，返回false
+	if (!bEnableValueTriggers)
+	{
+		return false;
+	}
+
+	// 遍历所有触发条件
+	for (const auto& Condition : ValueTriggerConditions)
+	{
+		// 如果条件未启用，跳过
+		if (!Condition.bEnabled)
+		{
+			continue;
+		}
+
+		bool bConditionMet = false;
+
+		// 根据条件类型检查值
+		switch (Condition.ConditionType)
+		{
+		case EValueTriggerConditionType::Equal:
+			bConditionMet = FMath::IsNearlyEqual(ValueToCheck, Condition.ReferenceValue);
+			break;
+		case EValueTriggerConditionType::NotEqual:
+			bConditionMet = !FMath::IsNearlyEqual(ValueToCheck, Condition.ReferenceValue);
+			break;
+		case EValueTriggerConditionType::Greater:
+			bConditionMet = ValueToCheck > Condition.ReferenceValue;
+			break;
+		case EValueTriggerConditionType::Less:
+			bConditionMet = ValueToCheck < Condition.ReferenceValue;
+			break;
+		case EValueTriggerConditionType::GreaterOrEqual:
+			bConditionMet = ValueToCheck >= Condition.ReferenceValue;
+			break;
+		case EValueTriggerConditionType::LessOrEqual:
+			bConditionMet = ValueToCheck <= Condition.ReferenceValue;
+			break;
+		case EValueTriggerConditionType::Range:
+			bConditionMet = (ValueToCheck >= Condition.ReferenceValue && ValueToCheck <= Condition.UpperBoundValue);
+			break;
+		case EValueTriggerConditionType::NotInRange:
+			bConditionMet = (ValueToCheck < Condition.ReferenceValue || ValueToCheck > Condition.UpperBoundValue);
+			break;
+		default:
+			bConditionMet = false;
+			break;
+		}
+
+		// 如果满足条件，设置输出颜色并返回true
+		if (bConditionMet)
+		{
+			OutColor = Condition.HighlightColor;
+			return true;
+		}
+	}
+
+	// 没有满足任何条件
+	return false;
+}
+
+int AXVChartBase::AddValueTriggerCondition(EValueTriggerConditionType ConditionType, float ReferenceValue_, 
+	FLinearColor HighlightColor, float UpperBoundValue, const FString& ConditionName)
+{
+	FValueTriggerCondition NewCondition;
+	NewCondition.ConditionType = ConditionType;
+	NewCondition.ReferenceValue = ReferenceValue;
+	NewCondition.UpperBoundValue = UpperBoundValue;
+	NewCondition.HighlightColor = HighlightColor;
+	NewCondition.ConditionName = ConditionName;
+	NewCondition.bEnabled = true;
+
+	// 添加到数组并返回索引
+	int32 Index = ValueTriggerConditions.Add(NewCondition);
+
+	// 如果触发条件已启用，立即应用
+	if (bEnableValueTriggers)
+	{
+		ApplyValueTriggerConditions();
+	}
+
+	return Index;
+}
+
+void AXVChartBase::RemoveValueTriggerCondition(int32 Index)
+{
+	if (ValueTriggerConditions.IsValidIndex(Index))
+	{
+		ValueTriggerConditions.RemoveAt(Index);
+
+		// 如果触发条件已启用，立即应用更改
+		if (bEnableValueTriggers)
+		{
+			ApplyValueTriggerConditions();
+		}
+	}
+}
+
+void AXVChartBase::ApplyValueTriggerConditions()
+{
+	// 基类实现为空，由子类具体实现
+	// 这个函数应该遍历图表中的所有数据点，检查它们的值是否满足任何触发条件
+	// 然后根据需要更新它们的颜色
+}
+
+void AXVChartBase::SetEnableValueTriggers(bool bEnable)
+{
+	bEnableValueTriggers = bEnable;
+
+	// 根据新的启用状态应用或清除触发条件
+	if (bEnableValueTriggers)
+	{
+		ApplyValueTriggerConditions();
+	}
+	else
+	{
+		// 禁用触发条件时，恢复所有区域的默认颜色
+		for (int32 i = 0; i < DynamicMaterialInstances.Num(); i++)
+		{
+			if (DynamicMaterialInstances[i])
+			{
+				DynamicMaterialInstances[i]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
+				DynamicMaterialInstances[i]->SetScalarParameterValue("EmissiveIntensity", 0);
+				UpdateMeshSection(i);
+			}
+		}
 	}
 }
