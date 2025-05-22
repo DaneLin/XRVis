@@ -7,6 +7,30 @@
 #include "GameFramework/Actor.h"
 #include "XVLineChart.generated.h"
 
+/**
+ * 时间数据点结构，用于存储折线图时间轴播放的数据
+ */
+USTRUCT()
+struct FXVTimeDataPoint
+{
+	GENERATED_BODY()
+	
+	// 行索引
+	int32 RowIndex;
+	
+	// 列索引
+	int32 ColIndex;
+	
+	// 数据值
+	float Value;
+	
+	// 实际时间值（从数据中解析）
+	float TimeValue;
+	
+	// 用于排序的键值
+	int32 SortKey;
+};
+
 UENUM()
 enum class ELineChartStyle : uint8
 {
@@ -73,6 +97,18 @@ public:
 	 * 创建一条统计轴线
 	 */
 	void CreateStatisticalLine(const FXVStatisticalLine& LineInfo);
+	
+	/**
+	 * 根据时间轴进度更新折线图
+	 * @param Progress - 时间轴进度，范围0-1
+	 */
+	void UpdateMeshBasedOnTimeProgress(double Progress);
+	
+	/**
+	 * 解析具有命名属性的数据，包括时间属性
+	 * @param NamedData - 命名属性数据数组
+	 */
+	void ParseNamedDataWithTime(const TArray<TSharedPtr<FJsonObject>>& NamedData);
 	
 protected:
 	// Called when the game starts or when spawned
@@ -157,5 +193,8 @@ private:
 	
 	UPROPERTY()
 	TArray<UTextRenderComponent*> StatisticalLineLabels;
+	
+	// 时间轴数据
+	TArray<FXVTimeDataPoint> TimeData;
 	
 };

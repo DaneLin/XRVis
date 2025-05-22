@@ -210,22 +210,27 @@ void AXVLineChart::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bEnableEnterAnimation)
+	// 只有在没有启用时间轴功能或时间轴没有自动播放时才执行入场动画
+	if (!bEnableTimelinePlayback || !bAutoPlayTimeline)
 	{
-		if (CurrentBuildTime < BuildTime && !IsHidden())
+		if (bEnableEnterAnimation)
 		{
-			ConstructMesh(CurrentBuildTime / BuildTime);
-			CurrentBuildTime += DeltaTime;
+			if (CurrentBuildTime < BuildTime && !IsHidden())
+			{
+				ConstructMesh(CurrentBuildTime / BuildTime);
+				CurrentBuildTime += DeltaTime;
+			}
+		}
+		else
+		{
+			if (!bAnimationFinished)
+			{
+				ConstructMesh(1);
+				bAnimationFinished = true;
+			}
 		}
 	}
-	else
-	{
-		if (!bAnimationFinished)
-		{
-			ConstructMesh(1);
-			bAnimationFinished = true;
-		}
-	}
+	
 	UpdateOnMouseEnterOrLeft();
 }
 
@@ -243,12 +248,54 @@ void AXVLineChart::SetValue(const FString& InValue)
 {
 	if (InValue.IsEmpty()) return;
 	XYZs.Empty();
+	// 清空时间数据
+	TimeData.Empty();
 
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(InValue);
 
 	TArray<TSharedPtr<FJsonValue>> Value3DJsonValueArray;
 
 	TotalCountOfValue = 0;
+	bool bHasTimeProperty = false;
+	
+	// 尝试判断数据格式
+	TSharedPtr<FJsonValue> JsonValue;
+	if (FJsonSerializer::Deserialize(Reader, JsonValue) && JsonValue.IsValid())
+	{
+		// 检查是否为数组格式
+		if (JsonValue->Type == EJson::Array)
+		{
+			TArray<TSharedPtr<FJsonValue>> JsonArray = JsonValue->AsArray();
+			
+			// 如果数组为空，直接返回
+			if (JsonArray.Num() == 0)
+				return;
+			
+			// 检查第一个元素以确定数据格式
+			TSharedPtr<FJsonValue> FirstElement = JsonArray[0];
+			
+			// 检查是否为对象格式 [{"x": ..., "y": ..., "z": ..., "time": ...}, ...]
+			if (FirstElement->Type == EJson::Object)
+			{
+				// 使用命名数据处理方式
+				TArray<TSharedPtr<FJsonObject>> NamedData;
+				for (const auto& Item : JsonArray)
+				{
+					if (Item->Type == EJson::Object)
+					{
+						NamedData.Add(Item->AsObject());
+					}
+				}
+				
+				// 解析命名数据
+				ParseNamedDataWithTime(NamedData);
+				return;
+			}
+		}
+	}
+	
+	// 如果不是命名对象格式，回退到原始格式处理 [[y,x,z], ...]
+	Reader = TJsonReaderFactory<>::Create(InValue);
 	if (FJsonSerializer::Deserialize(Reader, Value3DJsonValueArray))
 	{
 		for (const TSharedPtr<FJsonValue>& Value3DJsonValue :
@@ -256,10 +303,23 @@ void AXVLineChart::SetValue(const FString& InValue)
 		{
 			TArray<TSharedPtr<FJsonValue>> Values = Value3DJsonValue->AsArray();
 
-			if (Values.Num() != 3) return;
+			if (Values.Num() < 3) return;
 			int Y = Values[0]->AsNumber();
 			int X = Values[1]->AsNumber();
 			int V = Values[2]->AsNumber();
+			
+			// 检查是否有第四个值作为时间值
+			float Time = 0.0f;
+			if (Values.Num() > 3)
+			{
+				Time = Values[3]->AsNumber();
+				bHasTimeProperty = true;
+			}
+			else
+			{
+				// 如果没有时间值，使用索引作为默认时间
+				Time = TotalCountOfValue;
+			}
 
 			MaxX = FMath::Max(MaxX, X);
 			MinX = FMath::Min(MinX, X);
@@ -280,8 +340,275 @@ void AXVLineChart::SetValue(const FString& InValue)
 			}
 			ColCounts = FMath::Max(ColCounts, XYZs[Y].Num());
 			TotalCountOfValue++;
+			
+			// 保存数据点的索引和值，用于时间轴功能
+			FXVTimeDataPoint TimePoint;
+			TimePoint.RowIndex = Y;
+			TimePoint.ColIndex = X;
+			TimePoint.Value = V;
+			TimePoint.TimeValue = Time;
+			TimePoint.SortKey = bHasTimeProperty ? 0 : (Y * 1000 + X); // 有时间值时不使用排序键
+			TimeData.Add(TimePoint);
+		}
+		
+		// 对时间数据进行排序
+		if (bHasTimeProperty)
+		{
+			// 如果有时间属性，按时间值排序
+			TimeData.Sort([](const FXVTimeDataPoint& A, const FXVTimeDataPoint& B) {
+				return A.TimeValue < B.TimeValue;
+			});
+		}
+		else
+		{
+			// 否则按排序键排序
+			TimeData.Sort([](const FXVTimeDataPoint& A, const FXVTimeDataPoint& B) {
+				return A.SortKey < B.SortKey;
+			});
 		}
 	}
+	RowCounts = XYZs.Num();
+	LineSelection.SetNum(RowCounts);
+	TotalSelection.SetNum(TotalCountOfValue);
+
+	DynamicMaterialInstances.Empty();
+	DynamicMaterialInstances.SetNum(TotalCountOfValue + 1);
+	SectionSelectStates.Init(false, TotalCountOfValue + 1);
+	SectionsHeight.SetNum(TotalCountOfValue + 1);
+
+	GenerateAllMeshInfo();
+}
+
+/**
+ * 解析具有命名属性的数据，包括时间属性
+ */
+void AXVLineChart::ParseNamedDataWithTime(const TArray<TSharedPtr<FJsonObject>>& NamedData)
+{
+	if (NamedData.IsEmpty())
+		return;
+		
+	// 检查是否有时间属性
+	bool bHasTimeProperty = false;
+	
+	// 收集所有唯一的X和Y值
+	TSet<FString> UniqueXValues;
+	TSet<FString> UniqueYValues;
+	
+	// 第一轮扫描收集所有唯一值
+	for (const auto& DataItem : NamedData)
+	{
+		// 检查时间属性
+		if (DataItem->HasField(PropertyMapping.TimeProperty))
+		{
+			bHasTimeProperty = true;
+		}
+		
+		// 检查X和Y属性
+		if (DataItem->HasField(PropertyMapping.XProperty) &&
+			DataItem->HasField(PropertyMapping.YProperty))
+		{
+			// 获取X值
+			FString XValue;
+			if (DataItem->TryGetStringField(PropertyMapping.XProperty, XValue))
+			{
+				UniqueXValues.Add(XValue);
+			}
+			else
+			{
+				double XNumeric = 0;
+				if (DataItem->TryGetNumberField(PropertyMapping.XProperty, XNumeric))
+				{
+					XValue = FString::Printf(TEXT("%g"), XNumeric);
+					UniqueXValues.Add(XValue);
+				}
+			}
+
+			// 获取Y值
+			FString YValue;
+			if (DataItem->TryGetStringField(PropertyMapping.YProperty, YValue))
+			{
+				UniqueYValues.Add(YValue);
+			}
+			else
+			{
+				double YNumeric = 0;
+				if (DataItem->TryGetNumberField(PropertyMapping.YProperty, YNumeric))
+				{
+					YValue = FString::Printf(TEXT("%g"), YNumeric);
+					UniqueYValues.Add(YValue);
+				}
+			}
+		}
+	}
+	
+	// 转换为排序数组
+	TArray<FString> SortedXValues = UniqueXValues.Array();
+	TArray<FString> SortedYValues = UniqueYValues.Array();
+	
+	// 自定义排序逻辑：如果是纯数字则按照数值排序，否则按照字符串排序
+	auto NumericSort = [](const FString& A, const FString& B) -> bool
+	{
+		// 检查是否都是数字
+		bool bAIsNumeric = true;
+		bool bBIsNumeric = true;
+		double ANumeric = 0.0;
+		double BNumeric = 0.0;
+
+		// 尝试将字符串转换为数字
+		if (A.IsNumeric() && B.IsNumeric())
+		{
+			ANumeric = FCString::Atod(*A);
+			BNumeric = FCString::Atod(*B);
+			// 按数值排序
+			return ANumeric < BNumeric;
+		}
+		// 否则使用默认的字符串排序
+		return A < B;
+	};
+	
+	// 使用自定义排序逻辑
+	SortedXValues.Sort(NumericSort);
+	SortedYValues.Sort(NumericSort);
+	
+	// 创建映射字典
+	TMap<FString, int32> XValueToIndex;
+	TMap<FString, int32> YValueToIndex;
+
+	for (int32 i = 0; i < SortedXValues.Num(); i++)
+	{
+		XValueToIndex.Add(SortedXValues[i], i);
+	}
+
+	for (int32 i = 0; i < SortedYValues.Num(); i++)
+	{
+		YValueToIndex.Add(SortedYValues[i], i);
+	}
+	
+	// 存储轴标签
+	XText = SortedXValues;
+	YText = SortedYValues;
+	
+	// 第二轮扫描处理数据
+	for (const auto& DataItem : NamedData)
+	{
+		if (DataItem->HasField(PropertyMapping.XProperty) &&
+			DataItem->HasField(PropertyMapping.YProperty) &&
+			DataItem->HasField(PropertyMapping.ZProperty))
+		{
+			// 获取X值和索引
+			FString XValue;
+			int32 XIndex = 0;
+
+			if (DataItem->TryGetStringField(PropertyMapping.XProperty, XValue))
+			{
+				XIndex = XValueToIndex.FindRef(XValue);
+			}
+			else
+			{
+				double XNumeric = 0;
+				if (DataItem->TryGetNumberField(PropertyMapping.XProperty, XNumeric))
+				{
+					XValue = FString::Printf(TEXT("%g"), XNumeric);
+					XIndex = XValueToIndex.FindRef(XValue);
+				}
+			}
+
+			// 获取Y值和索引
+			FString YValue;
+			int32 YIndex = 0;
+
+			if (DataItem->TryGetStringField(PropertyMapping.YProperty, YValue))
+			{
+				YIndex = YValueToIndex.FindRef(YValue);
+			}
+			else
+			{
+				double YNumeric = 0;
+				if (DataItem->TryGetNumberField(PropertyMapping.YProperty, YNumeric))
+				{
+					YValue = FString::Printf(TEXT("%g"), YNumeric);
+					YIndex = YValueToIndex.FindRef(YValue);
+				}
+			}
+
+			// 获取Z值
+			double ZValue = 0;
+			DataItem->TryGetNumberField(PropertyMapping.ZProperty, ZValue);
+			
+			// 获取时间值
+			float TimeValue = TotalCountOfValue; // 默认使用计数作为时间
+			if (bHasTimeProperty)
+			{
+				double TimeNumeric = 0;
+				if (DataItem->TryGetNumberField(PropertyMapping.TimeProperty, TimeNumeric))
+				{
+					TimeValue = TimeNumeric;
+				}
+				else
+				{
+					FString TimeString;
+					if (DataItem->TryGetStringField(PropertyMapping.TimeProperty, TimeString))
+					{
+						// 尝试将字符串转换为数字（简单处理）
+						if (TimeString.IsNumeric())
+						{
+							TimeValue = FCString::Atof(*TimeString);
+						}
+						// 可以在这里添加更复杂的时间字符串解析
+					}
+				}
+			}
+			
+			// 更新数据范围
+			MaxX = FMath::Max(MaxX, XIndex);
+			MinX = FMath::Min(MinX, XIndex);
+			MaxY = FMath::Max(MaxY, YIndex);
+			MinY = FMath::Min(MinY, YIndex);
+			MaxZ = FMath::Max(MaxZ, ZValue);
+			MinZ = FMath::Min(MinZ, ZValue);
+			
+			// 添加到XYZs数据结构
+			if (XYZs.Contains(YIndex))
+			{
+				XYZs[YIndex].Add(XIndex, ZValue);
+			}
+			else
+			{
+				TMap<int, int> M;
+				M.Add(XIndex, ZValue);
+				XYZs.Add(YIndex, M);
+			}
+			
+			ColCounts = FMath::Max(ColCounts, XYZs[YIndex].Num());
+			TotalCountOfValue++;
+			
+			// 保存数据点的索引和值，用于时间轴功能
+			FXVTimeDataPoint TimePoint;
+			TimePoint.RowIndex = YIndex;
+			TimePoint.ColIndex = XIndex;
+			TimePoint.Value = ZValue;
+			TimePoint.TimeValue = TimeValue;
+			TimePoint.SortKey = bHasTimeProperty ? 0 : (YIndex * 1000 + XIndex); // 有时间值时不使用排序键
+			TimeData.Add(TimePoint);
+		}
+	}
+	
+	// 对时间数据进行排序
+	if (bHasTimeProperty)
+	{
+		// 如果有时间属性，按时间值排序
+		TimeData.Sort([](const FXVTimeDataPoint& A, const FXVTimeDataPoint& B) {
+			return A.TimeValue < B.TimeValue;
+		});
+	}
+	else
+	{
+		// 否则按排序键排序
+		TimeData.Sort([](const FXVTimeDataPoint& A, const FXVTimeDataPoint& B) {
+			return A.SortKey < B.SortKey;
+		});
+	}
+	
 	RowCounts = XYZs.Num();
 	LineSelection.SetNum(RowCounts);
 	TotalSelection.SetNum(TotalCountOfValue);
@@ -304,9 +631,86 @@ void AXVLineChart::ConstructMesh(double Rate)
 
 	Rate = FMath::Clamp<double>(Rate, 0.f, 1.f);
 
-	UpdateSectionVerticesOfZ(Rate);
+	// 如果启用了时间轴，应用特殊处理
+	if (bEnableTimelinePlayback)
+	{
+		// 根据时间轴进度来决定显示哪些数据点
+		UpdateMeshBasedOnTimeProgress(Rate);
+	}
+	else
+	{
+		// 原有的实现
+		UpdateSectionVerticesOfZ(Rate);
+	}
 
 	UpdateLOD();
+}
+
+/**
+ * 根据时间轴进度更新折线图
+ */
+void AXVLineChart::UpdateMeshBasedOnTimeProgress(double Progress)
+{
+	// 如果没有数据或时间数据为空，直接返回
+	if (TotalCountOfValue == 0 || TimeData.Num() == 0)
+	{
+		return;
+	}
+	
+	// 更新顶点高度
+	BackupVertices();
+	
+	// 计算当前时间点应该显示的数据点数量
+	int MaxPointsToShow = FMath::FloorToInt(TimeData.Num() * Progress);
+	
+	// 确保至少显示1个点
+	MaxPointsToShow = FMath::Max(1, MaxPointsToShow);
+	
+	// 创建一个集合来记录当前应该显示的点
+	TSet<int> VisiblePoints;
+	for (int i = 0; i < MaxPointsToShow; ++i)
+	{
+		const FXVTimeDataPoint& Point = TimeData[i];
+		int SectionIndex = Point.RowIndex * ColCounts + Point.ColIndex;
+		VisiblePoints.Add(SectionIndex);
+	}
+	
+	// 遍历所有数据点，更新其可见性
+	for (int RowIndex = 0; RowIndex < RowCounts; RowIndex++)
+	{
+		const auto& Row = XYZs[RowIndex];
+		for (const auto& XZPair : Row)
+		{
+			int SectionIndex = RowIndex * ColCounts + XZPair.Key;
+			
+			// 检查当前点是否应该显示
+			bool bShouldShowPoint = VisiblePoints.Contains(SectionIndex);
+			
+			// 更新该点的所有顶点
+			if (bShouldShowPoint)
+			{
+				FXVChartSectionInfo& XVChartSectionInfo = SectionInfos[SectionIndex];
+				for (size_t VerticeIndex = 0; VerticeIndex < XVChartSectionInfo.Vertices.Num(); VerticeIndex++)
+				{
+					FVector& Vertice = XVChartSectionInfo.Vertices[VerticeIndex];
+				
+					if (bShouldShowPoint)
+					{
+						// 完全显示
+						Vertice.Z = VerticesBackup[SectionIndex][VerticeIndex].Z;
+					}
+					
+				}
+				DrawMeshSection(SectionIndex);
+			}
+			else
+			{
+				ProceduralMeshComponent->ClearMeshSection(SectionIndex);
+			}
+			
+			
+		}
+	}
 }
 
 void AXVLineChart::GenerateAllMeshInfo()

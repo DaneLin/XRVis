@@ -19,9 +19,13 @@ AXVChartBase::AXVChartBase()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
 	ProceduralMeshComponent = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Procedural Mesh Component"));
 	ProceduralMeshComponent->SetCastShadow(false);
 	RootComponent = ProceduralMeshComponent;
+	
+	// 确保TimePropertyName与PropertyMapping.TimeProperty保持同步
+	PropertyMapping.TimeProperty = TimePropertyName;
 
 	Tags.Add(FName("Chart"));
 	TotalCountOfValue = 0;
@@ -291,6 +295,12 @@ void AXVChartBase::Tick(float DeltaTime)
 	if (bEnableGPU)
 	{
 		GeometryRenderer->SetModelMatrix(static_cast<FMatrix44f>(GetActorTransform().ToMatrixWithScale()));
+	}
+	
+	// 更新时间轴
+	if (bEnableTimelinePlayback)
+	{
+		UpdateTimeline(DeltaTime);
 	}
 }
 
@@ -1460,3 +1470,95 @@ void AXVChartBase::SetEnableValueTriggers(bool bEnable)
 		}
 	}
 }
+
+/**
+ * 设置时间轴进度
+ */
+void AXVChartBase::SetTimelineProgress(float Progress)
+{
+	// 确保进度值在0-1之间
+	TimelineProgress = FMath::Clamp(Progress, 0.0f, 1.0f);
+	
+	// 如果图表已加载数据且启用了时间轴功能，则更新显示
+	if (bEnableTimelinePlayback && TotalCountOfValue > 0)
+	{
+		// 根据进度更新图表显示
+		ConstructMesh(TimelineProgress);
+	}
+}
+
+/**
+ * 播放/暂停时间轴
+ */
+void AXVChartBase::PlayPauseTimeline(bool bPlay)
+{
+	// 设置是否自动播放
+	bAutoPlayTimeline = bPlay;
+}
+
+/**
+ * 重置时间轴到起始位置
+ */
+void AXVChartBase::ResetTimeline()
+{
+	// 重置进度并更新显示
+	TimelineProgress = 0.0f;
+	
+	if (bEnableTimelinePlayback && TotalCountOfValue > 0)
+	{
+		ConstructMesh(TimelineProgress);
+	}
+}
+
+/**
+ * 更新时间轴显示
+ */
+void AXVChartBase::UpdateTimeline(float DeltaTime)
+{
+	// 只有在启用了时间轴且设置为自动播放时才更新
+	if (bEnableTimelinePlayback && bAutoPlayTimeline && TotalCountOfValue > 0)
+	{
+		// 根据播放速度更新进度
+		TimelineProgress += DeltaTime * TimelinePlaybackSpeed * 0.1f;
+		
+		// 处理循环播放
+		if (TimelineProgress > 1.0f)
+		{
+			if (bLoopTimelinePlayback)
+			{
+				// 循环播放，重置到开始
+				TimelineProgress = FMath::Fmod(TimelineProgress, 1.0f);
+			}
+			else
+			{
+				// 不循环，停止在结束位置并暂停播放
+				TimelineProgress = 1.0f;
+				bAutoPlayTimeline = false;
+			}
+		}
+		
+		// 更新图表显示
+		ConstructMesh(TimelineProgress);
+	}
+}
+
+#if WITH_EDITOR
+void AXVChartBase::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	// 获取被修改的属性名称
+	FName PropertyName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : NAME_None;
+
+	// 如果修改了TimePropertyName，则同步到PropertyMapping.TimeProperty
+	if (PropertyName == GET_MEMBER_NAME_CHECKED(AXVChartBase, TimePropertyName))
+	{
+		PropertyMapping.TimeProperty = TimePropertyName;
+	}
+	// 如果修改了PropertyMapping.TimeProperty，则同步到TimePropertyName
+	else if (PropertyName == GET_MEMBER_NAME_CHECKED(FXVChartPropertyMapping, TimeProperty))
+	{
+		TimePropertyName = PropertyMapping.TimeProperty;
+	}
+}
+#endif

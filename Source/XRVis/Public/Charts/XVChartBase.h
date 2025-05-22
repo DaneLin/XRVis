@@ -117,6 +117,10 @@ struct FXVChartPropertyMapping
 	/** 数值属性名称（饼图） */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="数值属性名称（饼图）"))
 	FString ValueProperty;
+	
+	/** 时间属性名称（时间轴播放） */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="时间维度属性名称，用于时间轴播放功能"))
+	FString TimeProperty = "time";
 };
 
 // 添加值范围触发条件枚举
@@ -272,10 +276,39 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Chart Property | Trigger Conditions", meta=(ToolTip="是否启用触发条件"))
 	bool bEnableValueTriggers = false;
 
+	/* 时间轴播放相关属性 */
+	/** 是否启用时间轴播放功能 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Chart Property | Timeline", meta=(ToolTip="若数据含时间维度，开启后支持时间轴拖动或自动播放，动态展示折线在时间上的演变"))
+	bool bEnableTimelinePlayback = false;
+
+	/** 当前时间轴进度 (0.0-1.0) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Chart Property | Timeline", meta=(ClampMin="0.0", ClampMax="1.0", EditCondition="bEnableTimelinePlayback"))
+	float TimelineProgress = 0.0f;
+
+	/** 是否自动播放时间轴 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Chart Property | Timeline", meta=(EditCondition="bEnableTimelinePlayback"))
+	bool bAutoPlayTimeline = false;
+
+	/** 自动播放速度 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Chart Property | Timeline", meta=(ClampMin="0.1", ClampMax="10.0", EditCondition="bEnableTimelinePlayback && bAutoPlayTimeline"))
+	float TimelinePlaybackSpeed = 1.0f;
+
+	/** 是否循环播放 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Chart Property | Timeline", meta=(EditCondition="bEnableTimelinePlayback && bAutoPlayTimeline"))
+	bool bLoopTimelinePlayback = true;
+
+	/** 时间维度属性名称（已弃用，请使用PropertyMapping.TimeProperty） */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Chart Property | Timeline", meta=(EditCondition="bEnableTimelinePlayback", ToolTip="已弃用，请使用PropertyMapping.TimeProperty"))
+	FString TimePropertyName = "time";
+
 public:
 	// Sets default values for this actor's properties
 	AXVChartBase();
 	virtual ~AXVChartBase();
+
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
 
 	void PrepareMeshSections();
 
@@ -513,6 +546,32 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category="Chart Property | Trigger Conditions")
 	virtual void SetEnableValueTriggers(bool bEnable);
+
+	/**
+	 * 设置时间轴进度
+	 * @param Progress - 时间轴进度 (0.0-1.0)
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Timeline")
+	virtual void SetTimelineProgress(float Progress);
+
+	/**
+	 * 播放/暂停时间轴
+	 * @param bPlay - 是否播放
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Timeline")
+	virtual void PlayPauseTimeline(bool bPlay);
+
+	/**
+	 * 重置时间轴到起始位置
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Timeline")
+	virtual void ResetTimeline();
+
+	/**
+	 * 更新时间轴显示
+	 * @param DeltaTime - 帧间隔时间
+	 */
+	virtual void UpdateTimeline(float DeltaTime);
 
 protected:
 	// Called when the game starts or when spawned
