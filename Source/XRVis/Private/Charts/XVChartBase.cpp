@@ -108,12 +108,6 @@ void AXVChartBase::SetStyle()
 {
 }
 
-void AXVChartBase::ConstructMesh(double Rate)
-{
-	ProceduralMeshComponent->ClearAllMeshSections();
-	ProceduralMeshComponent->ClearCollisionConvexMeshes();
-}
-
 void AXVChartBase::PrepareMeshSections()
 {
 	ProceduralMeshComponent->ClearAllMeshSections();
@@ -121,36 +115,39 @@ void AXVChartBase::PrepareMeshSections()
 	LODInfos.Empty();
 	LODInfos.SetNum(GenerateLODCount);
 	SectionInfos.Empty();
-	// TODO: Bigger than actually needed
 	SectionInfos.SetNum(GenerateLODCount * TotalCountOfValue + 1);
 	LabelComponents.Empty();
 	LabelComponents.SetNum(TotalCountOfValue);
 	VerticesBackup.Empty();
 }
 
-void AXVChartBase::DrawMeshLOD(int LODLevel)
+void AXVChartBase::DrawMeshLOD(int LODLevel, double Rate)
 {
 	if (bEnableGPU)
 	{
 		return;
 	}
 	check(LODLevel < GenerateLODCount);
-	if(CurrentLOD == -1 || CurrentLOD != LODLevel)
+	bool bUpdateLOD = false;
+	if (CurrentLOD == -1 || CurrentLOD != LODLevel)
 	{
-		if(CurrentLOD != -1)
+		if (CurrentLOD != -1)
 		{
-			for (int Index = 0; Index < LODInfos[CurrentLOD].LODCount; ++Index)
+			for (int Index = 0; Index < LODInfos[CurrentLOD].LODCount * Rate; ++Index)
 			{
 				int SectionIndex = Index + LODInfos[CurrentLOD].LODOffset;
-				ProceduralMeshComponent->ClearMeshSection(SectionIndex);
+				ProceduralMeshComponent->SetMeshSectionVisible(SectionIndex, false);
 			}
 		}
-		
 		CurrentLOD = LODLevel;
-		for (int Index = 0; Index < LODInfos[CurrentLOD].LODCount; ++Index)
+		bUpdateLOD = true;
+	}
+	if(bUpdateLOD || Rate < 1)
+	{
+		for (int Index = 0; Index < LODInfos[CurrentLOD].LODCount * Rate; ++Index)
 		{
 			int SectionIndex = Index + LODInfos[CurrentLOD].LODOffset;
-			DrawMeshSection(SectionIndex);
+			ProceduralMeshComponent->SetMeshSectionVisible(SectionIndex, true);
 		}
 	}
 }
@@ -167,12 +164,7 @@ void AXVChartBase::ClearSelectedSection(const int& SectionIndex)
 
 void AXVChartBase::GenerateLOD()
 {
-	// 子类实现
-}
-
-void AXVChartBase::GenerateAllMeshInfo()
-{
-	// 子类实现
+	PrepareMeshSections();
 }
 
 void AXVChartBase::UpdateSectionVerticesOfZ(const double& Scale)
@@ -184,7 +176,6 @@ void AXVChartBase::UpdateSectionVerticesOfZ(const double& Scale)
 		for (size_t VerticeIndex = 0; VerticeIndex < XVChartSectionInfo.Vertices.Num(); VerticeIndex++)
 		{
 			FVector& Vertice = XVChartSectionInfo.Vertices[VerticeIndex];
-			// 这里限制比例的大小，避免出现高度为0的柱体，导致错误提示
 			Vertice.Z = VerticesBackup[SectionIndex][VerticeIndex].Z * FMath::Clamp(Scale, 0.1f, 1.0f);
 		}
 	}
@@ -1206,23 +1197,12 @@ void AXVChartBase::SetZAxisRange(bool bFromZero, float MinValue)
 {
 	bForceZeroBase = bFromZero;
 	MinZAxisValue = bFromZero ? 0.0f : MinValue;
-
-	// 重新构建图表以应用新设置
-	if (TotalCountOfValue > 0)
-	{
-		ConstructMesh(1.0f);
-	}
 }
 
 void AXVChartBase::SetZAxisScale(float Scale)
 {
 	ZAxisScale = FMath::Clamp(Scale, 0.1f, 10.0f);
-
-	// 重新构建图表以应用新设置
-	if (TotalCountOfValue > 0)
-	{
-		ConstructMesh(1.0f);
-	}
+	
 }
 
 void AXVChartBase::AutoAdjustZAxis(float MarginPercent)
@@ -1265,40 +1245,31 @@ void AXVChartBase::AutoAdjustZAxis(float MarginPercent)
 	{
 		bForceZeroBase = false;
 	}
-
-	// 重新构建图表以应用新设置
-	if (TotalCountOfValue > 0)
-	{
-		ConstructMesh(1.0f);
-	}
 }
 
 float AXVChartBase::CalculateAdjustedHeight(float RawHeight) const
 {
-	// 如果强制从0开始，则直接应用缩放
 	if (bForceZeroBase || RawHeight <= 0.0f)
 	{
 		return RawHeight * ZAxisScale;
 	}
 
-	// 否则，从MinZAxisValue开始计算相对高度
 	float AdjustedHeight = (RawHeight - MinZAxisValue) * ZAxisScale;
 
-	// 确保高度不为负
 	return FMath::Max(0.1f, AdjustedHeight);
 }
 
-void AXVChartBase::UpdateLOD()
+void AXVChartBase::UpdateLOD(double Rate)
 {
 	switch (LODType)
 	{
 	case ELODType::Distance:
 		{
-			FVector CameraLocation =GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraLocation();
+			FVector CameraLocation = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraLocation();
 			FVector ActorLocation = GetActorLocation();
 			float Distance = (CameraLocation - ActorLocation).Length();
 			int NewLODLevel = Algo::LowerBound(LODSwitchDis, Distance) - 1;
-			DrawMeshLOD(NewLODLevel);
+			DrawMeshLOD(NewLODLevel, Rate);
 		}
 		break;
 	case ELODType::ScreenSize:
@@ -1307,21 +1278,17 @@ void AXVChartBase::UpdateLOD()
 			GetActorBounds(false, Origin, BoxExtent);
 			FVector Origin2BoxExtent = BoxExtent - Origin;
 			float Dis = Origin2BoxExtent.Length();
-			// 获取投影矩阵
 			FMinimalViewInfo CameraView;
-			FMinimalViewInfo ViewInfo = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraCachePOV();
+			FMinimalViewInfo ViewInfo = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraCacheView();
 			FMatrix ProjectionMatrix = ViewInfo.CalculateProjectionMatrix();
-			const float Dist = FVector::Dist(GetActorLocation(), GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation());
-			// Get projection multiple accounting for view scaling.
+			const float Dist = FVector::Dist(GetActorLocation(),
+			                                 GetWorld()->GetFirstPlayerController()->GetPawn()->GetActorLocation());
 			const float ScreenMultiple = FMath::Max(0.5f * ProjectionMatrix.M[0][0], 0.5f * ProjectionMatrix.M[1][1]);
-			// Calculate screen-space projected radius
 			const float ScreenRadius = ScreenMultiple * Dis / FMath::Max(1.0f, Dist);
-			// For clarity, we end up comparing the diameter
 			float CurrentScreenSize = ScreenRadius * 2.f;
-			
+
 			int NewLODLevel = Algo::LowerBound(LODSwitchSize, CurrentScreenSize);
-			// 屏幕大小越大说明越近，LOD级别越小
-			DrawMeshLOD(GenerateLODCount -  NewLODLevel);
+			DrawMeshLOD(GenerateLODCount - NewLODLevel, Rate);
 		}
 		break;
 	default:
@@ -1332,16 +1299,13 @@ void AXVChartBase::UpdateLOD()
 
 bool AXVChartBase::CheckValueTriggerConditions(float ValueToCheck, FLinearColor& OutColor) const
 {
-	// 如果触发条件未启用，返回false
 	if (!bEnableValueTriggers)
 	{
 		return false;
 	}
 
-	// 遍历所有触发条件
 	for (const auto& Condition : ValueTriggerConditions)
 	{
-		// 如果条件未启用，跳过
 		if (!Condition.bEnabled)
 		{
 			continue;
@@ -1349,7 +1313,6 @@ bool AXVChartBase::CheckValueTriggerConditions(float ValueToCheck, FLinearColor&
 
 		bool bConditionMet = false;
 
-		// 根据条件类型检查值
 		switch (Condition.ConditionType)
 		{
 		case EValueTriggerConditionType::Equal:
@@ -1381,7 +1344,6 @@ bool AXVChartBase::CheckValueTriggerConditions(float ValueToCheck, FLinearColor&
 			break;
 		}
 
-		// 如果满足条件，设置输出颜色并返回true
 		if (bConditionMet)
 		{
 			OutColor = Condition.HighlightColor;
@@ -1389,12 +1351,12 @@ bool AXVChartBase::CheckValueTriggerConditions(float ValueToCheck, FLinearColor&
 		}
 	}
 
-	// 没有满足任何条件
 	return false;
 }
 
-int AXVChartBase::AddValueTriggerCondition(EValueTriggerConditionType ConditionType, float ReferenceValue_, 
-	FLinearColor HighlightColor, float UpperBoundValue, const FString& ConditionName)
+int AXVChartBase::AddValueTriggerCondition(EValueTriggerConditionType ConditionType, float ReferenceValue_,
+                                           FLinearColor HighlightColor, float UpperBoundValue,
+                                           const FString& ConditionName)
 {
 	FValueTriggerCondition NewCondition;
 	NewCondition.ConditionType = ConditionType;

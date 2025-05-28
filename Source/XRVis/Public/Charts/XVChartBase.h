@@ -98,25 +98,23 @@ struct FXVChartPropertyMapping
 {
 	GENERATED_BODY()
 
-	/** X轴属性名称 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="时间轴属性名称"))
+	FString TimeProperty = "Time";
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="X轴属性名称"))
-	FString XProperty;
+	FString XProperty = "Row";
 
-	/** Y轴属性名称 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="Y轴属性名称"))
-	FString YProperty;
+	FString YProperty = "Col";
 
-	/** Z轴属性名称（值） */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="Z轴属性名称（值）"))
-	FString ZProperty;
+	FString ZProperty = "Value";
 
-	/** 分类属性名称（饼图） */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="分类属性名称（饼图）"))
-	FString CategoryProperty;
+	FString CategoryProperty = "Category";
 
-	/** 数值属性名称（饼图） */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Data Mapping", meta=(ToolTip="数值属性名称（饼图）"))
-	FString ValueProperty;
+	FString ValueProperty = "Value";
 };
 
 // 添加值范围触发条件枚举
@@ -256,7 +254,7 @@ public:
 
 	/* LOD更新 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD更新"))
-	ELODType LODType;
+	ELODType LODType = ELODType::Distance;
 
 	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD相机更新距离"))
 	TArray<float> LODSwitchDis;
@@ -280,14 +278,12 @@ public:
 	void PrepareMeshSections();
 
 	UFUNCTION(BlueprintCallable)
-	void DrawMeshLOD(int LODLevel);
+	void DrawMeshLOD(int LODLevel, double Rate = 1);
 
 	virtual void SetValue(const FString& InValue);
 	virtual void SetStyle();
-	virtual void ConstructMesh(double Rate = 1);
 	virtual void ClearSelectedSection(const int& SectionIndex);
 	virtual void GenerateLOD();
-	virtual void GenerateAllMeshInfo();
 	virtual void UpdateSectionVerticesOfZ(const double& Scale);
 	virtual void DrawMeshSection(int SectionIndex, bool bCreateCollision = true);
 	virtual void UpdateMeshSection(int SectionIndex, bool bSRGBConversion = false);
@@ -471,7 +467,7 @@ public:
 	virtual float CalculateAdjustedHeight(float RawHeight) const;
 
 	UFUNCTION(BlueprintCallable, Category="Chart Property | LOD")
-	virtual void UpdateLOD();
+	virtual void UpdateLOD(double Rate = 1);
 
 	/**
 	 * 检查值是否满足任一触发条件
@@ -577,6 +573,10 @@ protected:
 	/* 动画是否结束标记 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	bool bAnimationFinished;
+
+	// LOD减少数量
+	UPROPERTY(EditAnywhere, Category="Chart Property | LOD", meta=(ClampMin="2"))
+	int NumLODReduceFactor = 2;
 	
 	/* 图表数据管理器 */
 	UPROPERTY()

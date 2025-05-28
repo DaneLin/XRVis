@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Engine/Font.h"
 #include "XVChartBase.h"
 #include "XVPieChart.generated.h"
 
@@ -159,9 +160,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category="Chart Property | Label")
 	void UpdateLabels();
-
-	virtual void ConstructMesh(double Rate = 1) override;
-
+	
 	virtual void GenerateLOD() override;
 
 	virtual void UpdateOnMouseEnterOrLeft() override;

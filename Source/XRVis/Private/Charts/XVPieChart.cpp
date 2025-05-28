@@ -70,9 +70,6 @@ void AXVPieChart::Create3DPieChart(const TMap<FString, float>& Data, EPieChartSt
 	SectionCategories.Empty(TotalCountOfValue);
 	SectionValues.Empty(TotalCountOfValue);
 
-	// 日志输出数据信息
-	UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 创建饼图，数据项数量: %d"), TotalCountOfValue);
-
 	double TotalValue = 0.0;
 	size_t CurrentIndex = 0;
 
@@ -82,9 +79,6 @@ void AXVPieChart::Create3DPieChart(const TMap<FString, float>& Data, EPieChartSt
 	{
 		OrderedData.Add(TPair<FString, float>(Elem.Key, Elem.Value));
 	}
-
-	// 按键排序(可选)
-	// OrderedData.Sort([](const TPair<FString, float>& A, const TPair<FString, float>& B) { return A.Key < B.Key; });
 
 	for (const auto& Pair : OrderedData)
 	{
@@ -111,7 +105,7 @@ void AXVPieChart::Create3DPieChart(const TMap<FString, float>& Data, EPieChartSt
 	Set3DPieChart(ChartStyle, PieChartColor, Shape);
 
 	// 完成后构建网格
-	ConstructMesh();
+	GenerateLOD();
 
 	// 更新标签
 	if (LabelConfig.bShowLabels && TotalCountOfValue > 0)
@@ -133,7 +127,7 @@ void AXVPieChart::Set3DPieChart(EPieChartStyle ChartStyle, const TArray<FColor>&
 	}
 
 	ProcessTypeAndShapeInfo();
-	ConstructMesh();
+	GenerateLOD();
 	// 更新标签
 	if (LabelConfig.bShowLabels && TotalCountOfValue > 0)
 	{
@@ -189,57 +183,16 @@ int AXVPieChart::GetSectionIndex()
 	return -1;
 }
 
-void AXVPieChart::ConstructMesh(double Rate)
+void AXVPieChart::GenerateLOD()
 {
-	Super::ConstructMesh(Rate);
+	Super::GenerateLOD();
 	if (AccumulatedValues.IsEmpty())
 	{
 		return;
 	}
-
-	PrepareMeshSections();
-
-	GenerateLOD();
-
-	// 网格构建完成后创建标签
-	// 先清理旧的标签
-	for (UTextRenderComponent* Label : SectionLabels)
-	{
-		if (Label)
-		{
-			Label->DestroyComponent();
-		}
-	}
-	SectionLabels.Empty();
-
-	// 清除现有引线
-	for (UProceduralMeshComponent* LineMesh : LeaderLineMeshes)
-	{
-		if (LineMesh)
-		{
-			LineMesh->DestroyComponent();
-		}
-	}
-	LeaderLineMeshes.Empty();
-
-	// 如果启用了标签，则创建新标签
-	if (LabelConfig.bShowLabels && TotalCountOfValue > 0)
-	{
-		UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 网格构建完成，开始创建标签"));
-		// 给一个小延迟，确保网格已完全构建
-		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
-		{
-			CreateSectionLabels();
-		});
-	}
-}
-
-void AXVPieChart::GenerateLOD()
-{
-	Super::GenerateLOD();
-
 	check(GenerateLODCount);
 	LODInfos.SetNum(GenerateLODCount);
+	
 	size_t DataSize = AccumulatedValues.Num() - 1;
 	for (int i = 0; i < GenerateLODCount; i++)
 	{
@@ -254,12 +207,14 @@ void AXVPieChart::GenerateLOD()
 			                       FinalInternalDiameter, ExternalDiameter + CurrentIndex * FinalNightingaleOffset,
 			                       SectionHeight,
 			                       SectionColors[CurrentIndex],
-			                       i + 1);
+			                       i * NumLODReduceFactor + 1);
 
 			DynamicMaterialInstances[SectionIndex] = UMaterialInstanceDynamic::Create(Material, this);
 			DynamicMaterialInstances[SectionIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
 			ProceduralMeshComponent->SetMaterial(SectionIndex, DynamicMaterialInstances[SectionIndex]);
-
+			DrawMeshSection(SectionIndex);
+			ProceduralMeshComponent->SetMeshSectionVisible(SectionIndex,false);
+			
 			CurrentSectionStartAngle = CurrentSectionEndAngle;
 		}
 		LODInfos[i].LODCount = DataSize;
@@ -427,16 +382,23 @@ void AXVPieChart::UpdateSection(const size_t& UpdateSectionIndex, const bool& In
 void AXVPieChart::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	UpdateLOD();
+	
+	if(bEnableEnterAnimation && !bAnimationFinished)
 	{
-		TimeSinceLastUpdate += DeltaTime;
-		if (TimeSinceLastUpdate < SectionHoverCooldown)
+		if (CurrentBuildTime < BuildTime && !IsHidden())
 		{
-			return;
+			double Rate = CurrentBuildTime / BuildTime;
+			UpdateLOD(Rate);
+			CurrentBuildTime += DeltaTime;
 		}
-		TimeSinceLastUpdate = 0.f;
-		UpdateOnMouseEnterOrLeft();
+		else
+		{
+			bAnimationFinished = true;
+		}
+	}
+	else 
+	{
+		UpdateLOD();
 	}
 }
 

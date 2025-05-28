@@ -153,8 +153,7 @@ void AXVLineChart::UpdateOnMouseEnterOrLeft()
 							Position + FVector(Width * .5, YAxisInterval * .5,
 							                   SectionsHeight[HoveredIndex] + 5)) *
 						GetActorScale3D();
-					LabelComponents[HoveredIndex]->SetWorldScale3D(GetActorScale3D() *
-						0.5f);
+					LabelComponents[HoveredIndex]->SetWorldScale3D(GetActorScale3D() *0.5f);
 					LabelComponents[HoveredIndex]->SetWorldLocation(NewLocation);
 
 					LabelComponents[HoveredIndex]->SetVisibility(true);
@@ -210,23 +209,24 @@ void AXVLineChart::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bEnableEnterAnimation)
+	if (bEnableGPU)
 	{
-		if (CurrentBuildTime < BuildTime && !IsHidden())
+		return;
+	}
+
+	if(!IsHidden())
+	{
+		if (bEnableEnterAnimation && CurrentBuildTime < BuildTime)
 		{
-			ConstructMesh(CurrentBuildTime / BuildTime);
+			UpdateLOD(CurrentBuildTime / BuildTime);
 			CurrentBuildTime += DeltaTime;
 		}
-	}
-	else
-	{
-		if (!bAnimationFinished)
+		else
 		{
-			ConstructMesh(1);
-			bAnimationFinished = true;
+			UpdateLOD();
 		}
 	}
-	UpdateOnMouseEnterOrLeft();
+	
 }
 
 void AXVLineChart::Create3DLineChart(const FString& Data,
@@ -236,7 +236,6 @@ void AXVLineChart::Create3DLineChart(const FString& Data,
 	Set3DLineChart(ChartStyle, LineChartColor);
 
 	SetValue(Data);
-	
 }
 
 void AXVLineChart::SetValue(const FString& InValue)
@@ -291,26 +290,13 @@ void AXVLineChart::SetValue(const FString& InValue)
 	SectionSelectStates.Init(false, TotalCountOfValue + 1);
 	SectionsHeight.SetNum(TotalCountOfValue + 1);
 
-	GenerateAllMeshInfo();
+	GenerateLOD();
 }
 
-void AXVLineChart::ConstructMesh(double Rate)
+void AXVLineChart::GenerateLOD()
 {
-	Super::ConstructMesh(Rate);
-	if (TotalCountOfValue == 0)
-	{
-		return;
-	}
+	Super::GenerateLOD();
 
-	Rate = FMath::Clamp<double>(Rate, 0.f, 1.f);
-
-	UpdateSectionVerticesOfZ(Rate);
-
-	UpdateLOD();
-}
-
-void AXVLineChart::GenerateAllMeshInfo()
-{
 	if (TotalCountOfValue == 0)
 	{
 		return;
@@ -321,8 +307,6 @@ void AXVLineChart::GenerateAllMeshInfo()
 	{
 		AutoAdjustZAxis(ZAxisMarginPercent);
 	}
-
-	PrepareMeshSections();
 
 	int LODOffset = 0;
 	for (int LODIndex = 0; LODIndex < GenerateLODCount; ++LODIndex)
@@ -346,6 +330,8 @@ void AXVLineChart::GenerateAllMeshInfo()
 				float AdjustedHeight = CalculateAdjustedHeight(RawHeight);
 				float AdjustedNextHeight = CalculateAdjustedHeight(RawNextHeight);
 
+				size_t CreatedSectionIndex = CurrentIndex + LODOffset;
+
 				if (LODIndex == 0)
 				{
 					SectionsHeight[CurrentIndex] =
@@ -354,35 +340,34 @@ void AXVLineChart::GenerateAllMeshInfo()
 
 				if (LineChartStyle != ELineChartStyle::Point)
 				{
-					XVChartUtils::CreateBox(SectionInfos, CurrentIndex, Position,
+					XVChartUtils::CreateBox(SectionInfos,CreatedSectionIndex, Position,
 					                        YAxisInterval, Width, AdjustedHeight,
 					                        AdjustedNextHeight,
 					                        Colors[RowIndex % Colors.Num()]);
 				}
 				else
 				{
-					int LODNumSphereSlices = FMath::Max(3, NumSphereSlices - LODIndex);
-					int LODNumSphereStacks = FMath::Max(2, NumSphereStacks - LODIndex);
+					int LODNumSphereSlices = FMath::Max(3, NumSphereSlices - LODIndex * NumLODReduceFactor);
+					int LODNumSphereStacks = FMath::Max(2, NumSphereStacks - LODIndex * NumLODReduceFactor);
 
-					XVChartUtils::CreateSphere(SectionInfos, CurrentIndex,
+					XVChartUtils::CreateSphere(SectionInfos, CreatedSectionIndex,
 					                           Position + FVector(0, 0, AdjustedHeight),
 					                           SphereRadius, LODNumSphereSlices,
 					                           LODNumSphereStacks,
 					                           Colors[RowIndex % Colors.Num()]);
 				}
 
-				DynamicMaterialInstances[CurrentIndex] =
-					UMaterialInstanceDynamic::Create(BaseMaterial, this);
-				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
-					TEXT("EmissiveColor"), EmissiveColor);
-				ProceduralMeshComponent->SetMaterial(
-					CurrentIndex, DynamicMaterialInstances[CurrentIndex]);
-
-				// 使用原始高度值作为标签文本
-				LabelComponents[CurrentIndex] = XVChartUtils::CreateTextRenderComponent(
-					this, FText::FromString(FString::Printf(TEXT("%.2f"), RawHeight)),
-					FColor::Cyan, false);
-
+				if (LODIndex == 0)
+				{
+					DynamicMaterialInstances[CurrentIndex] = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+					DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
+					// 使用原始高度值作为标签文本
+					LabelComponents[CurrentIndex] = XVChartUtils::CreateTextRenderComponent(this, FText::FromString(FString::Printf(TEXT("%.2f"), RawHeight)),FColor::Cyan, false);
+				}
+				ProceduralMeshComponent->SetMaterial(CreatedSectionIndex, DynamicMaterialInstances[CurrentIndex]);
+				DrawMeshSection(CreatedSectionIndex);
+				ProceduralMeshComponent->SetMeshSectionVisible(CreatedSectionIndex, false);
+				
 				CurrentIndex++;
 			}
 		}
@@ -410,6 +395,7 @@ void AXVLineChart::GenerateAllMeshInfo()
 		ApplyStatisticalLines();
 	}
 }
+
 
 #if WITH_EDITOR
 void AXVLineChart::PostEditChangeProperty(
@@ -702,11 +688,11 @@ void AXVLineChart::ApplyValueTriggerConditions()
 		{
 			// 使用原始高度值进行比较
 			int RawValue = XZPair.Value; // Z值
-			
+
 			// 检查值是否满足任何触发条件
 			FLinearColor HighlightColor;
 			bool bMatchesTrigger = CheckValueTriggerConditions(RawValue, HighlightColor);
-			
+
 			if (bMatchesTrigger)
 			{
 				// 符合条件，应用高亮颜色和发光效果
@@ -723,10 +709,10 @@ void AXVLineChart::ApplyValueTriggerConditions()
 				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
 					"EmissiveIntensity", 0);
 			}
-			
+
 			// 更新网格部分
 			UpdateMeshSection(CurrentIndex);
-			
+
 			CurrentIndex++;
 		}
 	}

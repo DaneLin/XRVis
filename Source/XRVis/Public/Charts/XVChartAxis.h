@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/TextRenderComponent.h"
+#include "Engine/Font.h"
 #include "GameFramework/Actor.h"
 #include "XVChartAxis.generated.h"
 

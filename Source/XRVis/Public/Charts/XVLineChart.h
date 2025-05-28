@@ -31,10 +31,8 @@ public:
 	virtual void UpdateOnMouseEnterOrLeft() override;
 
 	virtual void SetValue(const FString& InValue) override;
-
-	virtual void ConstructMesh(double Rate = 1) override;
-
-	virtual void GenerateAllMeshInfo() override;
+	
+	virtual void GenerateLOD() override;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
@@ -126,6 +124,9 @@ public:
 	// 球栈数，只有当HistogramChartShape为Point时才可以修改
 	UPROPERTY(EditAnywhere, Category="Chart Property | Sphere", meta=(ClampMin="2", EditCondition="LineChartStyle==ELineChartStyle::Point", EditConditionHides))
 	int NumSphereStacks;
+
+
+	
 	
 	// 输入的数据内容
 	UPROPERTY(EditAnywhere,  BlueprintReadWrite,Category = "Chart Property | Value")

@@ -103,16 +103,11 @@ public:
 	
 	virtual void NotifyActorOnClicked(FKey ButtonPressed) override;
 
-	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
-	virtual void ConstructMesh(double Rate = 1) override;
-
 	virtual void UpdateOnMouseEnterOrLeft() override;
 	
 	UFUNCTION(BlueprintCallable, Category = "Chart Property | Data")
 	virtual void SetValue(const FString& InValue) override;
-
-	virtual void GenerateAllMeshInfo() override;
-
+	
 	virtual void DrawWithGPU() override;
 
 	virtual void GenerateLOD() override;
