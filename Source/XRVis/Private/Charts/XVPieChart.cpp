@@ -2,6 +2,7 @@
 #include "Charts/XVPieChart.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Components/TextRenderComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "ProceduralMeshComponent.h"
 
 
@@ -16,27 +17,23 @@ AXVPieChart::AXVPieChart(): TimeSinceLastUpdate(0), GradientFactor(0), AngleConv
 	XVChartUtils::LoadResourceFromPath(
 		TEXT("/Script/Engine.Material'/XRVis/Materials/M_BaseVertexColor.M_BaseVertexColor'"), Material);
 
+	// 加载圆柱体网格用于引导线
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CylinderMeshFinder(TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
+	if (CylinderMeshFinder.Succeeded())
+	{
+		CylinderMesh = CylinderMeshFinder.Object;
+	}
+
 	// 初始化标签配置
 	LabelConfig.bShowLabels = true;
-	LabelConfig.FontSize = 12.0f;
-	LabelConfig.FontColor = FColor::White;
-	LabelConfig.FontWeight = 1.0f;
+	LabelConfig.FontSize = 40.0f;
+	LabelConfig.FontColor = FColor::Cyan;
 	LabelConfig.LabelFormat = TEXT("{category}: {value}");
 	LabelConfig.LabelPosition = EPieChartLabelPosition::Outside;
 	LabelConfig.LabelOffset = 10.0f;
-	LabelConfig.bShowLeaderLine = true;
-	LabelConfig.LeaderLineColor = FColor::White;
-	LabelConfig.LeaderLineThickness = 1.0f;
-	LabelConfig.LeaderLineLength = 0.0f;
-
-
-	static ConstructorHelpers::FObjectFinder<UFont> FontObject(TEXT("/Engine/EngineFonts/Roboto"));
-	if (FontObject.Succeeded())
-	{
-		UFont* Font = FontObject.Object;
-		LabelConfig.Font = Font;
-	}
-
+	LabelConfig.bShowLeaderLines = true;
+	LabelConfig.LeaderLineColor = FColor::Black;
+	LabelConfig.LeaderLineThickness = 2.0f;
 
 	ZoomOffset = 20.f;
 }
@@ -53,14 +50,24 @@ void AXVPieChart::Create3DPieChart(const TMap<FString, float>& Data, EPieChartSt
 	}
 
 	// 清理旧的标签
-	for (UTextRenderComponent* Label : SectionLabels)
+	for (UTextRenderComponent* Label : LabelComponents)
 	{
 		if (Label)
 		{
 			Label->DestroyComponent();
 		}
 	}
-	SectionLabels.Empty();
+	LabelComponents.Empty();
+
+	// 清理旧的引导线
+	for (UStaticMeshComponent* LeaderLine : LeaderLineComponents)
+	{
+		if (LeaderLine)
+		{
+			LeaderLine->DestroyComponent();
+		}
+	}
+	LeaderLineComponents.Empty();
 
 	AccumulatedValues.SetNum(TotalCountOfValue + 1);
 	AccumulatedValues[0] = 0;
@@ -275,13 +282,18 @@ void AXVPieChart::BeginPlay()
 	Super::BeginPlay();
 	TimeSinceLastUpdate = 0.f;
 
-	// 确保标签和引导线可见
+	// 确保标签和引导线在游戏开始时正确显示
 	if (LabelConfig.bShowLabels && TotalCountOfValue > 0)
 	{
 		// 在下一帧更新标签，确保所有组件都已初始化
 		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
 		{
 			UpdateLabels();
+			// 只有在悬停模式下才隐藏所有标签
+			if (LabelConfig.bHoverToShowLabels)
+			{
+				HideAllLabels();
+			}
 		});
 	}
 }
@@ -324,18 +336,33 @@ void AXVPieChart::UpdateOnMouseEnterOrLeft()
 				{
 					//之前移动到或者已经点选中了
 					if (HoveredSectionIndex == i || (HoveredSectionIndex != i && SectionSelectStates[i])) break;
+					
 					//清空之前选中
 					float NewInternalDiameter = FinalInternalDiameter;
 					float NewExternalDiameter = ExternalDiameter;
 					if (HoveredSectionIndex != -1 && !SectionSelectStates[HoveredSectionIndex])
 					{
+						// 只在悬停模式下隐藏之前悬停区块的标签
+						if (LabelConfig.bHoverToShowLabels)
+						{
+							HideLabel(HoveredSectionIndex);
+						}
+						
 						UpdateSection(HoveredSectionIndex, SectionSelectStates[HoveredSectionIndex],
 						              NewInternalDiameter,
 						              NewExternalDiameter + HoveredSectionIndex * FinalNightingaleOffset, 0);
 					}
 					NewExternalDiameter += i * FinalNightingaleOffset;
+					
 					//绘制新选中的块
 					HoveredSectionIndex = i;
+					
+					// 只在悬停模式下显示当前悬停区块的标签
+					if (LabelConfig.bHoverToShowLabels)
+					{
+						ShowLabel(HoveredSectionIndex);
+					}
+					
 					if (bEnableZoomAnimation)
 					{
 						NewExternalDiameter += ZoomOffset;
@@ -355,6 +382,12 @@ void AXVPieChart::UpdateOnMouseEnterOrLeft()
 	}
 	else if (!bIsMouseEntered && HoveredSectionIndex != -1 && !SectionSelectStates[HoveredSectionIndex])
 	{
+		// 只在悬停模式下隐藏悬停区块的标签
+		if (LabelConfig.bHoverToShowLabels)
+		{
+			HideLabel(HoveredSectionIndex);
+		}
+		
 		UpdateSection(HoveredSectionIndex, SectionSelectStates[HoveredSectionIndex], FinalInternalDiameter,
 		              ExternalDiameter + HoveredSectionIndex * FinalNightingaleOffset,
 		              0);
@@ -411,85 +444,65 @@ void AXVPieChart::SetLabelConfig(const FXVPieChartLabelConfig& InLabelConfig)
 
 	// 更新标签显示
 	UpdateLabels();
+	
+	// 根据新配置设置标签显示状态
+	if (LabelConfig.bShowLabels)
+	{
+		if (LabelConfig.bHoverToShowLabels)
+		{
+			// 悬停模式：隐藏所有标签
+			HideAllLabels();
+		}
+		// 如果不是悬停模式，标签已经在CreateSectionLabels中设置为可见
+	}
 }
 
 void AXVPieChart::UpdateLabels()
 {
-	// 清除现有标签
-	for (UTextRenderComponent* Label : SectionLabels)
+	// 清理现有标签组件 - 参考LineChart的方式
+	for (auto* Label : LabelComponents)
 	{
 		if (Label)
 		{
 			Label->DestroyComponent();
 		}
 	}
-	SectionLabels.Empty();
+	LabelComponents.Empty();
 
-	// 清除现有引线
-	for (UProceduralMeshComponent* LineMesh : LeaderLineMeshes)
+	// 清理现有引导线组件
+	for (auto* LeaderLine : LeaderLineComponents)
 	{
-		if (LineMesh)
+		if (LeaderLine)
 		{
-			LineMesh->DestroyComponent();
+			LeaderLine->DestroyComponent();
 		}
 	}
-	LeaderLineMeshes.Empty();
+	LeaderLineComponents.Empty();
 
-	// 如果启用了标签且有数据，创建新标签
-	if (LabelConfig.bShowLabels && TotalCountOfValue > 0)
+	// 如果不显示标签或没有数据，直接返回
+	if (!LabelConfig.bShowLabels || TotalCountOfValue <= 0)
 	{
-		// 在下一帧创建标签，确保所有组件都已初始化
-		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
-		{
-			CreateSectionLabels();
-		});
+		return;
+	}
+
+	// 直接创建新标签和引导线
+	CreateSectionLabels();
+	if (LabelConfig.bShowLeaderLines)
+	{
+		CreateLeaderLines();
 	}
 }
 
 void AXVPieChart::CreateSectionLabels()
 {
-	// 清理旧的标签
-	for (UTextRenderComponent* Label : SectionLabels)
-	{
-		if (Label)
-		{
-			Label->DestroyComponent();
-		}
-	}
-	SectionLabels.Empty();
-
 	// 如果没有数据或不需要显示标签，直接返回
 	if (TotalCountOfValue <= 0 || !LabelConfig.bShowLabels)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AXVPieChart: 没有数据或不需要显示标签"));
 		return;
 	}
 
-	// 确保有可用的字体
-	if (LabelConfig.Font == nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AXVPieChart: 标签字体为空，尝试加载默认字体"));
-		LabelConfig.Font = LoadObject<UFont>(nullptr, TEXT("/Engine/EngineFonts/Roboto.Roboto"));
-		if (LabelConfig.Font == nullptr)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AXVPieChart: 无法加载默认字体，标签创建失败"));
-			return;
-		}
-	}
-
-	UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 开始创建标签，共 %d 个区块"), TotalCountOfValue);
-
-	// 获取相机方向（用于标签面向）
-	FVector CameraDirection = FVector(1, 0, 0); // 默认方向
-
-	// 获取主相机方向
-	APlayerController* PC = GetWorld()->GetFirstPlayerController();
-	if (PC)
-	{
-		FRotator CameraRotation;
-		PC->GetPlayerViewPoint(/*out*/ CameraDirection, /*out*/ CameraRotation);
-		CameraDirection = CameraRotation.Vector();
-	}
+	// 确保LabelComponents数组大小正确 - 参考LineChart的方式
+	LabelComponents.SetNum(TotalCountOfValue);
 
 	// 为每个区块创建标签
 	for (int32 i = 0; i < TotalCountOfValue; ++i)
@@ -497,7 +510,6 @@ void AXVPieChart::CreateSectionLabels()
 		// 安全检查
 		if (i >= SectionCategories.Num() || i >= SectionValues.Num())
 		{
-			UE_LOG(LogTemp, Error, TEXT("AXVPieChart: 索引超出范围，标签创建失败: %d"), i);
 			continue;
 		}
 
@@ -518,86 +530,31 @@ void AXVPieChart::CreateSectionLabels()
 			ActualExternalRadius = ExternalDiameter + i * FinalNightingaleOffset;
 		}
 
-		// 确定标签位置和旋转
+		// 计算标签位置 - 在区块外径的上方
 		FVector LabelPosition;
-		FRotator LabelRotation;
+		
+		// 标签统一放在区块外径边缘的上方
+		LabelPosition = GetActorLocation() + FVector(
+			ActualExternalRadius * FMath::Cos(MidAngleRadians),
+			ActualExternalRadius * FMath::Sin(MidAngleRadians),
+			SectionHeight + 50.0f // 在区块高度上方5个单位
+		);
 
-		// 根据标签类型计算位置
-		if (LabelConfig.LabelPosition == EPieChartLabelPosition::Inside)
+		// 如果是外部标签模式，可以稍微向外偏移一点
+		if (LabelConfig.LabelPosition == EPieChartLabelPosition::Outside)
 		{
-			// 内部标签 - 放在区块中间位置
-			float LabelRadius = FinalInternalDiameter + (ActualExternalRadius - FinalInternalDiameter) * 0.5f;
-			LabelPosition = CenterPosition + FVector(
-				LabelRadius * FMath::Cos(MidAngleRadians),
-				LabelRadius * FMath::Sin(MidAngleRadians),
-				SectionHeight * 0.5f + 1.0f // 增加高度，确保可见
-			);
-
-			// 内部标签朝向（始终朝向相机）
-			FVector LabelDirection = (LabelPosition - CenterPosition).GetSafeNormal();
-			// 计算标签看向相机的旋转
-			LabelRotation = FRotationMatrix::MakeFromX(LabelDirection).Rotator();
-
-			// 如果在下半圆，需要翻转文本方向
-			if (MidAngleDegrees > 90 && MidAngleDegrees < 270)
-			{
-				LabelRotation.Yaw += 180.0f;
-			}
-		}
-		else // EPieChartLabelPosition::Outside
-		{
-			// 外部标签 - 在区块边缘向外偏移
-			float LabelOffset = LabelConfig.LabelOffset + 30.0f; // 增加偏移，确保标签足够远
-			LabelPosition = CenterPosition + FVector(
+			float LabelOffset = LabelConfig.LabelOffset;
+			LabelPosition = GetActorLocation() + FVector(
 				(ActualExternalRadius + LabelOffset) * FMath::Cos(MidAngleRadians),
 				(ActualExternalRadius + LabelOffset) * FMath::Sin(MidAngleRadians),
-				SectionHeight * 0.5f + 1.0f // 增加高度，确保可见
+				SectionHeight + 50.0f // 在区块高度上方5个单位
 			);
-
-			// 外部标签朝向 - 使用水平方向
-			if (MidAngleDegrees >= 270 || MidAngleDegrees <= 90)
-			{
-				// 右侧标签
-				LabelRotation = FRotator(0, 270.0f, 0);
-			}
-			else
-			{
-				// 左侧标签
-				LabelRotation = FRotator(0, 90.0f, 0);
-			}
 		}
 
-		// 创建文本渲染组件
+		// 创建文本渲染组件 - 参考LineChart的方式
 		UTextRenderComponent* Label = NewObject<UTextRenderComponent>(this);
 		Label->SetupAttachment(RootComponent);
 		Label->RegisterComponent();
-
-		// 设置标签属性
-		Label->SetFont(LabelConfig.Font);
-		Label->SetTextRenderColor(LabelConfig.FontColor);
-		Label->SetWorldSize(LabelConfig.FontSize);
-
-		// 设置水平对齐方式
-		if (LabelConfig.LabelPosition == EPieChartLabelPosition::Inside)
-		{
-			// 内部标签居中对齐
-			Label->SetHorizontalAlignment(EHorizTextAligment::EHTA_Center);
-		}
-		else
-		{
-			// 外部标签：右侧标签左对齐，左侧标签右对齐
-			if (MidAngleDegrees >= 270 || MidAngleDegrees <= 90)
-			{
-				Label->SetHorizontalAlignment(EHorizTextAligment::EHTA_Left);
-			}
-			else
-			{
-				Label->SetHorizontalAlignment(EHorizTextAligment::EHTA_Right);
-			}
-		}
-
-		// 设置垂直对齐方式
-		Label->SetVerticalAlignment(EVerticalTextAligment::EVRTA_TextCenter);
 
 		// 格式化标签文本
 		FString LabelText = LabelConfig.LabelFormat;
@@ -605,86 +562,49 @@ void AXVPieChart::CreateSectionLabels()
 		LabelText = LabelText.Replace(TEXT("{value}"), *FString::Printf(TEXT("%.2f"), SectionValues[i]));
 		Label->SetText(FText::FromString(LabelText));
 
-		// 设置标签位置和旋转
-		Label->SetWorldLocation(LabelPosition);
-		Label->SetWorldRotation(LabelRotation);
+		Label->SetTextRenderColor(LabelConfig.FontColor);
+		Label->SetWorldSize(LabelConfig.FontSize);
+		Label->SetHorizontalAlignment(EHorizTextAligment::EHTA_Center);
+		Label->SetVerticalAlignment(EVerticalTextAligment::EVRTA_TextCenter);
 
-		// 应用高亮材质
-		UMaterialInstanceDynamic* TextMaterial = UMaterialInstanceDynamic::Create(Material, this);
-		if (TextMaterial)
+		// 设置标签位置 - 先不设置旋转，后续动态调整朝向相机
+		Label->SetWorldLocation(LabelPosition);
+
+		// 根据显示模式设置初始可见性
+		bool bInitiallyVisible = !LabelConfig.bHoverToShowLabels;
+		Label->SetVisibility(bInitiallyVisible);
+
+		// 如果标签初始可见，设置朝向相机
+		if (bInitiallyVisible && GetWorld() && GetWorld()->GetFirstPlayerController() && GetWorld()->GetFirstPlayerController()->PlayerCameraManager)
 		{
-			TextMaterial->SetVectorParameterValue("EmissiveColor", FLinearColor(LabelConfig.FontColor));
-			TextMaterial->SetScalarParameterValue("EmissiveIntensity", 5.0f);
-			Label->SetTextMaterial(TextMaterial);
+			FRotator CamRotation = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraRotation();
+			CamRotation.Yaw += 180;
+			CamRotation.Pitch *= -1;
+			FRotator TextRotation(CamRotation);
+			Label->SetWorldRotation(TextRotation);
 		}
 
-		// 设置标签渲染特性
-		Label->SetVisibility(true);
-		Label->SetHiddenInGame(false);
-		Label->bAlwaysRenderAsText = true; // 确保始终渲染为文本
-		Label->bRenderCustomDepth = true; // 开启自定义深度
-		Label->SetCastShadow(false); // 不投射阴影
-		Label->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 禁用碰撞
-		Label->bUseAsOccluder = false; // 不作为遮挡物
-
-		// 记录标签信息
-		UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 创建标签 %d, 文本: %s, 位置: (%f, %f, %f), 角度: %f"),
-		       i, *LabelText, LabelPosition.X, LabelPosition.Y, LabelPosition.Z, MidAngleDegrees);
-
-		// 保存到标签数组
-		SectionLabels.Add(Label);
-	}
-
-	// 如果需要显示引导线且标签在外部，则创建引导线
-	if (LabelConfig.bShowLeaderLine && LabelConfig.LabelPosition == EPieChartLabelPosition::Outside && TotalCountOfValue
-		> 0)
-	{
-		// 在下一帧创建引导线，确保标签已经正确创建
-		GetWorld()->GetTimerManager().SetTimerForNextTick([this]()
-		{
-			CreateLabelLeaderLines();
-		});
+		// 保存标签组件 - 直接设置到对应索引而不是Add
+		LabelComponents[i] = Label;
 	}
 }
 
-void AXVPieChart::CreateLabelLeaderLines()
+void AXVPieChart::CreateLeaderLines()
 {
-	// 清理旧的引导线组件
-	for (UProceduralMeshComponent* LineMesh : LeaderLineMeshes)
-	{
-		if (LineMesh)
-		{
-			LineMesh->DestroyComponent();
-		}
-	}
-	LeaderLineMeshes.Empty();
-
-	// 如果标签不在外部或者没有启用引导线，直接返回
-	if (LabelConfig.LabelPosition != EPieChartLabelPosition::Outside || !LabelConfig.bShowLeaderLine)
+	// 如果没有数据或不需要显示引导线，直接返回
+	if (TotalCountOfValue <= 0 || !LabelConfig.bShowLabels || !LabelConfig.bShowLeaderLines)
 	{
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 开始创建引导线，共 %d 个区块"), TotalCountOfValue);
+	// 确保LeaderLineComponents数组大小正确
+	LeaderLineComponents.SetNum(TotalCountOfValue);
 
-	// 确保材质可用
-	if (!Material)
-	{
-		// 如果没有找到材质，加载默认材质
-		XVChartUtils::LoadResourceFromPath(
-			TEXT("/Script/Engine.Material'/XRVis/Materials/M_BaseVertexColor.M_BaseVertexColor'"), Material);
-		if (!Material)
-		{
-			UE_LOG(LogTemp, Error, TEXT("AXVPieChart: 无法加载默认材质，引导线创建失败"));
-			return;
-		}
-	}
-
-	// 为每个标签创建引导线
+	// 为每个区块创建引导线
 	for (int32 i = 0; i < TotalCountOfValue; ++i)
 	{
 		// 安全检查
-		if (i >= SectionLabels.Num())
+		if (i >= SectionCategories.Num() || i >= SectionValues.Num())
 		{
 			continue;
 		}
@@ -706,361 +626,84 @@ void AXVPieChart::CreateLabelLeaderLines()
 			ActualExternalRadius = ExternalDiameter + i * FinalNightingaleOffset;
 		}
 
-		// 计算引导线的起点（饼图边缘）
-		FVector LineStart = CenterPosition + FVector(
+		// 计算引导线起始位置（饼图边缘）
+		FVector StartPosition = GetActorLocation() + FVector(
 			ActualExternalRadius * FMath::Cos(MidAngleRadians),
 			ActualExternalRadius * FMath::Sin(MidAngleRadians),
-			SectionHeight * 0.5f + 1.0f // 与标签同高
+			SectionHeight * 0.5f // 在区块中间高度
 		);
 
-		// 获取标签位置作为终点
-		FVector LabelPosition = SectionLabels[i]->GetComponentLocation();
-
-		// 计算朝向标签的方向
-		FVector LabelDirection = (LabelPosition - LineStart).GetSafeNormal();
-
-		// 引导线终点 - 距离标签一小段距离
-		FVector LineEnd = LabelPosition - LabelDirection * 10.0f;
-
-		// 创建两段引导线（一段从饼图边缘出发，一段连接到标签）
-		// 计算中间点
-		FVector MidPoint = LineStart + LabelDirection * ((LineEnd - LineStart).Size() * 0.5f);
-
-		// 第一段引导线
-		UProceduralMeshComponent* LineMesh1 = NewObject<UProceduralMeshComponent>(this);
-		LineMesh1->SetupAttachment(RootComponent);
-		LineMesh1->RegisterComponent();
-		CreateSingleLeaderLineSegment(LineMesh1, LineStart, MidPoint, LabelConfig.LeaderLineColor,
-		                              LabelConfig.LeaderLineThickness);
-
-		// 第二段引导线
-		UProceduralMeshComponent* LineMesh2 = NewObject<UProceduralMeshComponent>(this);
-		LineMesh2->SetupAttachment(RootComponent);
-		LineMesh2->RegisterComponent();
-		CreateSingleLeaderLineSegment(LineMesh2, MidPoint, LineEnd, LabelConfig.LeaderLineColor,
-		                              LabelConfig.LeaderLineThickness);
-
-		// 添加到引导线数组
-		LeaderLineMeshes.Add(LineMesh1);
-		LeaderLineMeshes.Add(LineMesh2);
-
-		UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 创建引导线 %d, 起点: (%f, %f, %f), 终点: (%f, %f, %f)"),
-		       i, LineStart.X, LineStart.Y, LineStart.Z, LineEnd.X, LineEnd.Y, LineEnd.Z);
-	}
-}
-
-// 创建单段引导线
-void AXVPieChart::CreateSingleLeaderLineSegment(UProceduralMeshComponent* LineMesh, const FVector& StartPoint,
-                                                const FVector& EndPoint, const FColor& Color, float Thickness)
-{
-	// 计算方向和长度
-	FVector Direction = (EndPoint - StartPoint).GetSafeNormal();
-	float Length = FVector::Dist(StartPoint, EndPoint);
-
-	// 使用两个交叉的平面创建"十字"形状的线条，确保在任何视角都能看到
-
-	// 平面1：垂直于Z轴
-	FVector Right1 = FVector(0, 0, 1).Cross(Direction).GetSafeNormal();
-	if (Right1.IsNearlyZero())
-	{
-		Right1 = FVector(0, 1, 0);
-	}
-	FVector Up1 = Direction.Cross(Right1).GetSafeNormal();
-
-	// 平面2：垂直于水平面上的一个向量
-	FVector Right2 = FVector(0, 1, 0).Cross(Direction).GetSafeNormal();
-	if (Right2.IsNearlyZero())
-	{
-		Right2 = FVector(1, 0, 0);
-	}
-	FVector Up2 = Direction.Cross(Right2).GetSafeNormal();
-
-	// 创建线条几何体
-	TArray<FVector> Vertices;
-	TArray<int32> Triangles;
-	TArray<FVector> Normals;
-	TArray<FVector2D> UVs;
-	TArray<FLinearColor> VertexColors;
-	TArray<FProcMeshTangent> Tangents;
-
-	// 线条宽度
-	float HalfWidth = Thickness * 0.5f;
-
-	// 创建第一个平面（8个顶点，形成一个交叉的十字形）
-	// 平面1：垂直平面
-	FVector V1_1 = StartPoint + Right1 * HalfWidth;
-	FVector V1_2 = StartPoint - Right1 * HalfWidth;
-	FVector V1_3 = EndPoint - Right1 * HalfWidth;
-	FVector V1_4 = EndPoint + Right1 * HalfWidth;
-
-	// 平面2：水平平面
-	FVector V2_1 = StartPoint + Right2 * HalfWidth;
-	FVector V2_2 = StartPoint - Right2 * HalfWidth;
-	FVector V2_3 = EndPoint - Right2 * HalfWidth;
-	FVector V2_4 = EndPoint + Right2 * HalfWidth;
-
-	// 添加平面1的顶点
-	int BaseIndex = Vertices.Num();
-	Vertices.Add(V1_1); // 0
-	Vertices.Add(V1_2); // 1
-	Vertices.Add(V1_3); // 2
-	Vertices.Add(V1_4); // 3
-
-	// 添加平面1的两个三角形（正面）
-	Triangles.Add(BaseIndex + 0);
-	Triangles.Add(BaseIndex + 1);
-	Triangles.Add(BaseIndex + 2);
-
-	Triangles.Add(BaseIndex + 0);
-	Triangles.Add(BaseIndex + 2);
-	Triangles.Add(BaseIndex + 3);
-
-	// 添加平面1的两个三角形（背面）
-	Triangles.Add(BaseIndex + 0);
-	Triangles.Add(BaseIndex + 2);
-	Triangles.Add(BaseIndex + 1);
-
-	Triangles.Add(BaseIndex + 0);
-	Triangles.Add(BaseIndex + 3);
-	Triangles.Add(BaseIndex + 2);
-
-	// 添加平面2的顶点
-	BaseIndex = Vertices.Num();
-	Vertices.Add(V2_1); // 4
-	Vertices.Add(V2_2); // 5
-	Vertices.Add(V2_3); // 6
-	Vertices.Add(V2_4); // 7
-
-	// 添加平面2的两个三角形（正面）
-	Triangles.Add(BaseIndex + 0);
-	Triangles.Add(BaseIndex + 1);
-	Triangles.Add(BaseIndex + 2);
-
-	Triangles.Add(BaseIndex + 0);
-	Triangles.Add(BaseIndex + 2);
-	Triangles.Add(BaseIndex + 3);
-
-	// 添加平面2的两个三角形（背面）
-	Triangles.Add(BaseIndex + 0);
-	Triangles.Add(BaseIndex + 2);
-	Triangles.Add(BaseIndex + 1);
-
-	Triangles.Add(BaseIndex + 0);
-	Triangles.Add(BaseIndex + 3);
-	Triangles.Add(BaseIndex + 2);
-
-	// 设置法线、UV和颜色
-	FLinearColor LineColor = FLinearColor(Color);
-
-	// 平面1的法线
-	for (int32 i = 0; i < 4; ++i)
-	{
-		// 我们需要为正面和背面设置不同的法线
-		if (i % 2 == 0)
+		// 计算引导线结束位置（标签位置）
+		FVector EndPosition;
+		if (LabelConfig.LabelPosition == EPieChartLabelPosition::Outside)
 		{
-			Normals.Add(Up1); // 正面法线
-		}
-		else
-		{
-			Normals.Add(-Up1); // 背面法线
-		}
-		UVs.Add(FVector2D(0, 0));
-		VertexColors.Add(LineColor);
-		Tangents.Add(FProcMeshTangent(Right1, false));
-	}
-
-	// 平面2的法线
-	for (int32 i = 0; i < 4; ++i)
-	{
-		if (i % 2 == 0)
-		{
-			Normals.Add(Up2); // 正面法线
-		}
-		else
-		{
-			Normals.Add(-Up2); // 背面法线
-		}
-		UVs.Add(FVector2D(0, 0));
-		VertexColors.Add(LineColor);
-		Tangents.Add(FProcMeshTangent(Right2, false));
-	}
-
-	// 创建线条网格
-	LineMesh->CreateMeshSection_LinearColor(0, Vertices, Triangles, Normals, UVs, VertexColors, Tangents, true);
-
-	// 创建并应用双面材质
-	UMaterialInstanceDynamic* LineMaterial = UMaterialInstanceDynamic::Create(Material, this);
-	if (LineMaterial)
-	{
-		LineMaterial->SetVectorParameterValue("EmissiveColor", LineColor);
-		LineMaterial->SetScalarParameterValue("EmissiveIntensity", 20.0f); // 高发光强度
-
-		// 尝试设置材质为双面渲染
-		LineMaterial->SetScalarParameterValue("TwoSided", 1.0f); // 如果材质支持此参数
-
-		LineMesh->SetMaterial(0, LineMaterial);
-	}
-
-	// 设置线条渲染属性 - 强制启用双面渲染和深度测试
-	LineMesh->SetVisibility(true);
-	LineMesh->SetHiddenInGame(false);
-	LineMesh->SetRenderCustomDepth(true);
-	LineMesh->SetCustomDepthStencilValue(1);
-	LineMesh->SetCastShadow(false);
-	LineMesh->bUseAsOccluder = false; // 不作为遮挡物
-	LineMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 禁用碰撞
-
-	// 这里我们不使用bDisableDepthTest，因为用户移除了这个设置
-	// 但我们确保其他所有可见性相关设置都是最优的
-}
-
-void AXVPieChart::CalculateLabelPosition(
-	int32 SectionIndex,
-	float StartAngle,
-	float EndAngle,
-	FVector& OutLabelPosition,
-	FRotator& OutLabelRotation,
-	FVector& OutLeaderLineStart,
-	FVector& OutLeaderLineEnd)
-{
-	// 计算区块中点角度（注意：输入角度是度数，需要转换为弧度）
-	float MidAngleDegrees = (StartAngle + EndAngle) * 0.5f;
-	float MidAngleRadians = FMath::DegreesToRadians(MidAngleDegrees);
-
-	// 记录角度值
-	UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 区块 %d 角度计算 - 开始角度: %f, 结束角度: %f, 中点角度: %f度/%f弧度"),
-	       SectionIndex, StartAngle, EndAngle, MidAngleDegrees, MidAngleRadians);
-
-	// 如果这个区块有特殊的半径（例如南丁格尔玫瑰图），计算正确的外径
-	float ActualExternalRadius = ExternalDiameter;
-	if (bIsShapeNightingale && SectionIndex < TotalCountOfValue)
-	{
-		ActualExternalRadius = ExternalDiameter + SectionIndex * FinalNightingaleOffset;
-	}
-
-	// 设置引导线起点在区块外径处
-	OutLeaderLineStart = CenterPosition + FVector(
-		ActualExternalRadius * FMath::Cos(MidAngleRadians),
-		ActualExternalRadius * FMath::Sin(MidAngleRadians),
-		SectionHeight * 0.5f
-	);
-
-	// 记录引导线起点
-	UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 区块 %d 引导线起点位置 (%f, %f, %f)"),
-	       SectionIndex, OutLeaderLineStart.X, OutLeaderLineStart.Y, OutLeaderLineStart.Z);
-
-	// 根据标签位置计算标签位置和引导线终点
-	if (LabelConfig.LabelPosition == EPieChartLabelPosition::Inside)
-	{
-		// 内部标签 - 放在饼图内部
-		float LabelRadius = FinalInternalDiameter + (ActualExternalRadius - FinalInternalDiameter) * 0.5f;
-		OutLabelPosition = CenterPosition + FVector(
-			LabelRadius * FMath::Cos(MidAngleRadians),
-			LabelRadius * FMath::Sin(MidAngleRadians),
-			SectionHeight * 0.5f
-		);
-
-		// 标签朝向 - 始终垂直于饼图半径方向
-		FVector ToCenter = (CenterPosition - OutLabelPosition).GetSafeNormal();
-		if (!ToCenter.IsNearlyZero())
-		{
-			// 计算旋转，使标签垂直于半径
-			FVector WorldUp = FVector(0, 0, 1);
-			FVector RightVector = FVector::CrossProduct(WorldUp, ToCenter).GetSafeNormal();
-
-			// 如果右向量接近零，使用另一个参考方向
-			if (RightVector.IsNearlyZero())
-			{
-				RightVector = FVector(1, 0, 0);
-			}
-
-			// 计算向上方向，确保三个向量互相垂直
-			FVector UpVector = FVector::CrossProduct(ToCenter, RightVector).GetSafeNormal();
-
-			// 创建旋转矩阵并转换为旋转器
-			OutLabelRotation = FRotationMatrix::MakeFromXY(ToCenter, RightVector).Rotator();
-
-			// 调整角度，使文本从上到下阅读（而不是倒立）
-			if (MidAngleDegrees > 90 && MidAngleDegrees < 270)
-			{
-				OutLabelRotation.Yaw += 180.0f;
-			}
-		}
-		else
-		{
-			// 默认朝向
-			OutLabelRotation = FRotator(0, 0, 0);
-		}
-
-		// 内部标签不需要引导线
-		OutLeaderLineEnd = OutLeaderLineStart;
-
-		// 略微抬高标签，确保不会被饼图表面遮挡
-		OutLabelPosition.Z += 0.5f;
-
-		UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 标签内部位置 (%f, %f, %f), 旋转: (%f, %f, %f)"),
-		       OutLabelPosition.X, OutLabelPosition.Y, OutLabelPosition.Z,
-		       OutLabelRotation.Pitch, OutLabelRotation.Yaw, OutLabelRotation.Roll);
-	}
-	else // EPieChartLabelPosition::Outside
-	{
-		// 外部标签 - 从引导线起点向外偏移
-		float LabelOffset = LabelConfig.LabelOffset + 25.0f; // 增加偏移使标签更远离饼图边缘
-
-		// 计算标签位置 - 每个象限使用不同的策略
-		// 将圆周分为四个象限
-		bool bIsRightSide = (MidAngleDegrees <= 90 || MidAngleDegrees >= 270);
-		bool bIsTopSide = (MidAngleDegrees >= 0 && MidAngleDegrees <= 180);
-
-		// 基础位置 - 从饼图中心向外
-		OutLabelPosition = CenterPosition + FVector(
-			(ActualExternalRadius + LabelOffset) * FMath::Cos(MidAngleRadians),
-			(ActualExternalRadius + LabelOffset) * FMath::Sin(MidAngleRadians),
-			SectionHeight * 0.5f + 0.5f // 略微抬高，确保可见
-		);
-
-		// 调整标签旋转，使其总是水平显示
-		if (bIsRightSide)
-		{
-			// 右侧标签 - 水平向右
-			OutLabelRotation = FRotator(0, 270, 0);
-		}
-		else
-		{
-			// 左侧标签 - 水平向左
-			OutLabelRotation = FRotator(0, 90, 0);
-		}
-
-		// 计算引导线终点
-		if (LabelConfig.LeaderLineLength > 0)
-		{
-			// 使用指定的引导线长度
-			OutLeaderLineEnd = OutLeaderLineStart + FVector(
-				LabelConfig.LeaderLineLength * FMath::Cos(MidAngleRadians),
-				LabelConfig.LeaderLineLength * FMath::Sin(MidAngleRadians),
-				0.0f
+			float LabelOffset = LabelConfig.LabelOffset;
+			EndPosition = GetActorLocation() + FVector(
+				(ActualExternalRadius + LabelOffset) * FMath::Cos(MidAngleRadians),
+				(ActualExternalRadius + LabelOffset) * FMath::Sin(MidAngleRadians),
+				SectionHeight + 50.0f // 与标签高度一致
 			);
 		}
 		else
 		{
-			// 自动计算引导线长度 - 从饼图边缘到标签前一段距离
-			float AutoLineLength = LabelOffset * 0.8f;
-
-			OutLeaderLineEnd = OutLeaderLineStart + FVector(
-				AutoLineLength * FMath::Cos(MidAngleRadians),
-				AutoLineLength * FMath::Sin(MidAngleRadians),
-				0.0f
+			EndPosition = GetActorLocation() + FVector(
+				ActualExternalRadius * FMath::Cos(MidAngleRadians),
+				ActualExternalRadius * FMath::Sin(MidAngleRadians),
+				SectionHeight + 50.0f // 与标签高度一致
 			);
 		}
 
-		// 确保引导线和标签在同一Z平面上
-		OutLeaderLineEnd.Z = OutLabelPosition.Z - 0.1f; // 稍微低于标签，避免重叠
-
-		UE_LOG(LogTemp, Log, TEXT("AXVPieChart: 标签外部位置 (%f, %f, %f), 旋转: (%f, %f, %f), 引导线终点: (%f, %f, %f)"),
-		       OutLabelPosition.X, OutLabelPosition.Y, OutLabelPosition.Z,
-		       OutLabelRotation.Pitch, OutLabelRotation.Yaw, OutLabelRotation.Roll,
-		       OutLeaderLineEnd.X, OutLeaderLineEnd.Y, OutLeaderLineEnd.Z);
+		// 创建引导线
+		CreateSingleLeaderLine(i, StartPosition, EndPosition);
 	}
+}
+
+void AXVPieChart::CreateSingleLeaderLine(int32 SectionIndex, const FVector& StartPosition, const FVector& EndPosition)
+{
+	// 创建静态网格组件作为引导线
+	UStaticMeshComponent* LeaderLine = NewObject<UStaticMeshComponent>(this);
+	LeaderLine->SetupAttachment(RootComponent);
+
+	// 使用构造函数中加载的圆柱体网格作为线条
+	if (CylinderMesh)
+	{
+		LeaderLine->SetStaticMesh(CylinderMesh);
+	}
+
+	// 计算线条的长度、位置和旋转
+	FVector LineDirection = EndPosition - StartPosition;
+	float LineLength = LineDirection.Size();
+	FVector LineMidpoint = (StartPosition + EndPosition) * 0.5f;
+	
+	// 计算旋转角度，使圆柱体沿着线条方向
+	FRotator LineRotation = FRotationMatrix::MakeFromZ(LineDirection.GetSafeNormal()).Rotator();
+	
+	// 设置位置和旋转
+	LeaderLine->SetWorldLocation(LineMidpoint);
+	LeaderLine->SetWorldRotation(LineRotation);
+	
+	// 设置缩放：长度为线条长度，粗细为配置的厚度
+	float Thickness = LabelConfig.LeaderLineThickness * 0.01f; // 调整比例
+	LeaderLine->SetWorldScale3D(FVector(Thickness, Thickness, LineLength * 0.01f));
+
+	// 创建动态材质实例并设置颜色
+	if (Material)
+	{
+		UMaterialInstanceDynamic* LineMaterial = UMaterialInstanceDynamic::Create(Material, this);
+		LineMaterial->SetVectorParameterValue("BaseColor", FLinearColor(LabelConfig.LeaderLineColor));
+		LineMaterial->SetScalarParameterValue("EmissiveIntensity", 0.5f);
+		LeaderLine->SetMaterial(0, LineMaterial);
+	}
+
+	// 注册组件
+	LeaderLine->RegisterComponent();
+
+	// 根据显示模式设置初始可见性
+	bool bInitiallyVisible = !LabelConfig.bHoverToShowLabels;
+	LeaderLine->SetVisibility(bInitiallyVisible);
+
+	// 保存引导线组件
+	LeaderLineComponents[SectionIndex] = LeaderLine;
 }
 
 // 应用值触发条件到饼图
@@ -1110,4 +753,133 @@ void AXVPieChart::ApplyValueTriggerConditions()
 TArray<float> AXVPieChart::GetAllDataValues() const
 {
 	return SectionValues;
+}
+
+void AXVPieChart::ShowLabel(int32 SectionIndex)
+{
+	// 安全检查
+	if (SectionIndex < 0 || SectionIndex >= LabelComponents.Num() || !LabelComponents[SectionIndex])
+	{
+		return;
+	}
+
+	// 设置标签朝向相机 - 参考LineChart的旋转设置
+	if (GetWorld() && GetWorld()->GetFirstPlayerController() && GetWorld()->GetFirstPlayerController()->PlayerCameraManager)
+	{
+		FRotator CamRotation = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraRotation();
+		CamRotation.Yaw += 180;
+		CamRotation.Pitch *= -1;
+		FRotator TextRotation(CamRotation);
+		LabelComponents[SectionIndex]->SetWorldRotation(TextRotation);
+	}
+
+	// 显示标签
+	LabelComponents[SectionIndex]->SetVisibility(true);
+	
+	// 同时显示对应的引导线
+	if (LabelConfig.bShowLeaderLines)
+	{
+		ShowLeaderLine(SectionIndex);
+	}
+}
+
+void AXVPieChart::HideLabel(int32 SectionIndex)
+{
+	// 安全检查
+	if (SectionIndex < 0 || SectionIndex >= LabelComponents.Num() || !LabelComponents[SectionIndex])
+	{
+		return;
+	}
+
+	// 隐藏标签
+	LabelComponents[SectionIndex]->SetVisibility(false);
+	
+	// 同时隐藏对应的引导线
+	HideLeaderLine(SectionIndex);
+}
+
+void AXVPieChart::HideAllLabels()
+{
+	// 隐藏所有标签
+	for (int32 i = 0; i < LabelComponents.Num(); ++i)
+	{
+		HideLabel(i);
+	}
+	
+	// 同时隐藏所有引导线
+	HideAllLeaderLines();
+}
+
+void AXVPieChart::ShowAllLabels()
+{
+	// 获取相机旋转角度 - 一次获取，应用到所有标签
+	FRotator TextRotation = FRotator::ZeroRotator;
+	if (GetWorld() && GetWorld()->GetFirstPlayerController() && GetWorld()->GetFirstPlayerController()->PlayerCameraManager)
+	{
+		FRotator CamRotation = GetWorld()->GetFirstPlayerController()->PlayerCameraManager->GetCameraRotation();
+		CamRotation.Yaw += 180;
+		CamRotation.Pitch *= -1;
+		TextRotation = FRotator(CamRotation);
+	}
+
+	// 显示所有标签并设置朝向相机
+	for (int32 i = 0; i < LabelComponents.Num(); ++i)
+	{
+		if (LabelComponents[i])
+		{
+			LabelComponents[i]->SetWorldRotation(TextRotation);
+			LabelComponents[i]->SetVisibility(true);
+		}
+	}
+	
+	// 同时显示所有引导线
+	if (LabelConfig.bShowLeaderLines)
+	{
+		ShowAllLeaderLines();
+	}
+}
+
+void AXVPieChart::ShowLeaderLine(int32 SectionIndex)
+{
+	// 安全检查
+	if (SectionIndex < 0 || SectionIndex >= LeaderLineComponents.Num() || !LeaderLineComponents[SectionIndex])
+	{
+		return;
+	}
+
+	// 显示引导线
+	LeaderLineComponents[SectionIndex]->SetVisibility(true);
+}
+
+void AXVPieChart::HideLeaderLine(int32 SectionIndex)
+{
+	// 安全检查
+	if (SectionIndex < 0 || SectionIndex >= LeaderLineComponents.Num() || !LeaderLineComponents[SectionIndex])
+	{
+		return;
+	}
+
+	// 隐藏引导线
+	LeaderLineComponents[SectionIndex]->SetVisibility(false);
+}
+
+void AXVPieChart::HideAllLeaderLines()
+{
+	// 隐藏所有引导线
+	for (int32 i = 0; i < LeaderLineComponents.Num(); ++i)
+	{
+		HideLeaderLine(i);
+	}
+}
+
+void AXVPieChart::ShowAllLeaderLines()
+{
+	// 显示所有引导线
+	for (int32 i = 0; i < LeaderLineComponents.Num(); ++i)
+	{
+		if (LeaderLineComponents[i])
+		{
+			LeaderLineComponents[i]->SetVisibility(true);
+		}
+	}
 }

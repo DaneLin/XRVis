@@ -43,21 +43,17 @@ struct FXVPieChartLabelConfig
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label")
 	bool bShowLabels = true;
 
-	/** 标签字体 */
+	/** 标签显示模式 - true为鼠标悬停显示，false为一直显示 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels"))
-	UFont* Font = nullptr;
+	bool bHoverToShowLabels = false;
 
 	/** 标签字体大小 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels"))
-	float FontSize = 12.0f;
+	float FontSize = 40.0f;
 
 	/** 标签字体颜色 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels"))
-	FColor FontColor = FColor::White;
-
-	/** 标签字体粗细（材质强度） */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels", ClampMin="0.0", ClampMax="3.0"))
-	float FontWeight = 1.0f;
+	FColor FontColor = FColor::Black;
 
 	/** 标签格式 - 使用{category}表示类别，{value}表示数值 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels"))
@@ -70,22 +66,18 @@ struct FXVPieChartLabelConfig
 	/** 标签距离饼图表面的偏移距离 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels"))
 	float LabelOffset = 10.0f;
-    
-	/** 是否显示引线 - 仅当标签位置为外部时有效 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels && LabelPosition==EPieChartLabelPosition::Outside"))
-	bool bShowLeaderLine = true;
-    
-	/** 引线颜色 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels && bShowLeaderLine && LabelPosition==EPieChartLabelPosition::Outside"))
-	FColor LeaderLineColor = FColor::White;
-    
-	/** 引线粗细 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels && bShowLeaderLine && LabelPosition==EPieChartLabelPosition::Outside", ClampMin="0.5", ClampMax="5.0"))
-	float LeaderLineThickness = 1.0f;
-    
-	/** 引线长度 - 如果为0，则自动计算 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels && bShowLeaderLine && LabelPosition==EPieChartLabelPosition::Outside"))
-	float LeaderLineLength = 0.0f;
+
+	/** 是否显示引导线 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels"))
+	bool bShowLeaderLines = true;
+
+	/** 引导线颜色 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels && bShowLeaderLines"))
+	FColor LeaderLineColor = FColor::Black;
+
+	/** 引导线粗细 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Chart Property | Label", meta=(EditCondition="bShowLabels && bShowLeaderLines"))
+	float LeaderLineThickness = 2.0f;
 };
 
 UCLASS()
@@ -160,6 +152,58 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, Category="Chart Property | Label")
 	void UpdateLabels();
+
+	/**
+	 * 显示指定区块的标签
+	 * @param SectionIndex - 区块索引
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Label")
+	void ShowLabel(int32 SectionIndex);
+
+	/**
+	 * 隐藏指定区块的标签
+	 * @param SectionIndex - 区块索引
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Label")
+	void HideLabel(int32 SectionIndex);
+
+	/**
+	 * 隐藏所有标签
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Label")
+	void HideAllLabels();
+
+	/**
+	 * 显示所有标签
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Label")
+	void ShowAllLabels();
+
+	/**
+	 * 显示指定区块的引导线
+	 * @param SectionIndex - 区块索引
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Label")
+	void ShowLeaderLine(int32 SectionIndex);
+
+	/**
+	 * 隐藏指定区块的引导线
+	 * @param SectionIndex - 区块索引
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Label")
+	void HideLeaderLine(int32 SectionIndex);
+
+	/**
+	 * 隐藏所有引导线
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Label")
+	void HideAllLeaderLines();
+
+	/**
+	 * 显示所有引导线
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Label")
+	void ShowAllLeaderLines();
 	
 	virtual void GenerateLOD() override;
 
@@ -186,19 +230,17 @@ protected:
 	void CreateSectionLabels();
 
 	/**
-	 * 创建标签引线
+	 * 创建引导线
 	 */
-	void CreateLabelLeaderLines();
+	void CreateLeaderLines();
 
 	/**
-	 * 创建单段引导线
-	 * @param LineMesh - 要创建的线条网格组件
-	 * @param StartPoint - 线条起点
-	 * @param EndPoint - 线条终点
-	 * @param Color - 线条颜色
-	 * @param Thickness - 线条粗细
+	 * 创建单条引导线
+	 * @param SectionIndex - 区块索引
+	 * @param StartPosition - 起始位置
+	 * @param EndPosition - 结束位置
 	 */
-	void CreateSingleLeaderLineSegment(UProceduralMeshComponent* LineMesh, const FVector& StartPoint, const FVector& EndPoint, const FColor& Color, float Thickness);
+	void CreateSingleLeaderLine(int32 SectionIndex, const FVector& StartPosition, const FVector& EndPosition);
 
 	/**
 	 * 创建标签文本材质
@@ -206,25 +248,6 @@ protected:
 	 * @return 创建的动态材质实例
 	 */
 	UMaterialInstanceDynamic* CreateTextMaterial(const FColor& TextColor);
-
-	/**
-	 * 计算标签位置
-	 * @param SectionIndex - 区块索引
-	 * @param StartAngle - 区块起始角度
-	 * @param EndAngle - 区块结束角度
-	 * @param OutLabelPosition - 计算得到的标签位置
-	 * @param OutLabelRotation - 计算得到的标签旋转
-	 * @param OutLeaderLineStart - 引线起点(如果需要引线)
-	 * @param OutLeaderLineEnd - 引线终点(如果需要引线)
-	 */
-	void CalculateLabelPosition(
-		int32 SectionIndex, 
-		float StartAngle, 
-		float EndAngle, 
-		FVector& OutLabelPosition, 
-		FRotator& OutLabelRotation,
-		FVector& OutLeaderLineStart,
-		FVector& OutLeaderLineEnd);
 
 public:
 	
@@ -243,12 +266,14 @@ private:
 	TArray<FString> SectionCategories;
 	TArray<float> SectionValues;
 	
-	// 标签组件数组
-	TArray<UTextRenderComponent*> SectionLabels;
+	// 引导线组件数组
+	UPROPERTY()
+	TArray<UStaticMeshComponent*> LeaderLineComponents;
 	
-	// 引线组件数组
-	TArray<UProceduralMeshComponent*> LeaderLineMeshes;
-
+	// 引导线使用的圆柱体网格
+	UPROPERTY()
+	UStaticMesh* CylinderMesh;
+	
 	float TimeSinceLastUpdate;
 	float SectionHoverCooldown = 0.5f;
 
