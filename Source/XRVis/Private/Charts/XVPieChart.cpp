@@ -191,16 +191,17 @@ void AXVPieChart::GenerateLOD()
 		return;
 	}
 	check(GenerateLODCount);
-	LODInfos.SetNum(GenerateLODCount);
+	TArray<FLODInfo> CurrentLODInfo;
+	CurrentLODInfo.SetNum(GenerateLODCount);
 	
 	size_t DataSize = AccumulatedValues.Num() - 1;
 	for (int i = 0; i < GenerateLODCount; i++)
 	{
 		size_t CurrentSectionStartAngle = 0;
-		LODInfos[i].LODOffset = i * DataSize;
+		CurrentLODInfo[i].LODOffset = i * DataSize;
 		for (int CurrentIndex = 0; CurrentIndex < DataSize; ++CurrentIndex)
 		{
-			uint32_t SectionIndex = LODInfos[i].LODOffset + CurrentIndex;
+			uint32_t SectionIndex = CurrentLODInfo[i].LODOffset + CurrentIndex;
 			size_t CurrentSectionEndAngle = static_cast<size_t>(AccumulatedValues[CurrentIndex] * AngleConvertFactor);
 			GeneratePieSectionInfo(CenterPosition, SectionIndex,
 			                       CurrentSectionStartAngle, CurrentSectionEndAngle - FinalSectionGapAngle,
@@ -217,8 +218,9 @@ void AXVPieChart::GenerateLOD()
 			
 			CurrentSectionStartAngle = CurrentSectionEndAngle;
 		}
-		LODInfos[i].LODCount = DataSize;
+		CurrentLODInfo[i].LODCount = DataSize;
 	}
+	TimedSectionInfos.Add(0.0f, {0, std::move(CurrentLODInfo)});
 }
 
 void AXVPieChart::ProcessTypeAndShapeInfo()

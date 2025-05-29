@@ -93,6 +93,10 @@ public:
 	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Chart Property | Axis Text", meta=(EditCondition="bEnableAxis"))
 	TArray<FString> ZText;
 
+	/** 时间轴的文本内容，启用坐标轴后可编辑 */
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category="Chart Property | Axis Text", meta=(EditCondition="bEnableAxis"))
+	TArray<FString> TimeText;
+
 	/** X轴的间隔 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Line")
 	int XAxisInterval;
@@ -105,6 +109,10 @@ public:
 	UPROPERTY(EditAnywhere, Category="Chart Property | Line")
 	int ZAxisInterval;
 	
+	/** 时间轴的间隔 */
+	UPROPERTY(EditAnywhere, Category="Chart Property | Line")
+	float TimeAxisInterval;
+	
 	/** 宽度 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Line")
 	int Width;
@@ -112,6 +120,18 @@ public:
 	/** 长度 */
 	UPROPERTY(EditAnywhere, Category="Chart Property | Line")
 	int Length;
+
+	/** 是否启用时间动画 */
+	UPROPERTY(EditAnywhere, Category="Chart Property | Time Animation")
+	bool bEnableTimeAnimation;
+
+	/** 动画播放速度 */
+	UPROPERTY(EditAnywhere, Category="Chart Property | Time Animation", meta=(EditCondition="bEnableTimeAnimation", ClampMin="0.1", ClampMax="10.0"))
+	float AnimationSpeed;
+
+	/** 是否循环播放动画 */
+	UPROPERTY(EditAnywhere, Category="Chart Property | Time Animation", meta=(EditCondition="bEnableTimeAnimation"))
+	bool bLoopAnimation;
 
 	// 球半径，只有当HistogramChartShape为Point时才可以修改
 	UPROPERTY(EditAnywhere, Category="Chart Property | Sphere", meta=(ClampMin="0", EditCondition="LineChartStyle==ELineChartStyle::Point", EditConditionHides))
@@ -124,9 +144,6 @@ public:
 	// 球栈数，只有当HistogramChartShape为Point时才可以修改
 	UPROPERTY(EditAnywhere, Category="Chart Property | Sphere", meta=(ClampMin="2", EditCondition="LineChartStyle==ELineChartStyle::Point", EditConditionHides))
 	int NumSphereStacks;
-
-
-	
 	
 	// 输入的数据内容
 	UPROPERTY(EditAnywhere,  BlueprintReadWrite,Category = "Chart Property | Value")
@@ -134,6 +151,12 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category = "Chart Property | Style")
 	ELineChartStyle LineChartStyle;
+
+	/**
+	 * 获取所有时间点
+	 */
+	UFUNCTION(BlueprintCallable, Category="Chart Property | Time Animation")
+	TArray<float> GetAllTimePoints() const;
 
 private:
 
@@ -145,8 +168,9 @@ private:
 	TArray<bool> LineSelection;
 	TArray<bool> TotalSelection;
 	
-	TMap<int, TMap<int, int>> XYZs;
-	int MaxX, MinX, MaxY,MinY, MaxZ, MinZ;
+	TMap<float, TMap<int, TMap<int, int>>> XYZs;
+	int MaxX, MinX, MaxY,MinY;
+	float MaxZ, MinZ;
 	int CurColCount;
 	int RowCounts, ColCounts;
 
@@ -158,5 +182,17 @@ private:
 	
 	UPROPERTY()
 	TArray<UTextRenderComponent*> StatisticalLineLabels;
+
+	// 时间动画相关
+	TArray<float> AllTimePoints;
+	
+	// 时间范围
+	float MinTime = -1.0f;
+	float MaxTime = -1.0f;
+	
+	/**
+	 * 更新时间点显示
+	 */
+	void UpdateTimePointDisplay();
 	
 };

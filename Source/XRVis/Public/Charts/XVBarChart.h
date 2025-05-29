@@ -83,6 +83,19 @@ public:
 	UPROPERTY(VisibleAnywhere, Category="Chart Property | Style")
 	EHistogramChartShape HistogramChartShape;
 
+	/** 是否启用时间动画 */
+	UPROPERTY(EditAnywhere, Category="Chart Property | Time Animation")
+	bool bEnableTimeAnimation;
+
+	/** 动画播放速度 */
+	UPROPERTY(EditAnywhere, Category="Chart Property | Time Animation", meta=(EditCondition="bEnableTimeAnimation", ClampMin="0.1", ClampMax="10.0"))
+	float AnimationSpeed;
+
+	/** 是否循环播放动画 */
+	UPROPERTY(EditAnywhere, Category="Chart Property | Time Animation", meta=(EditCondition="bEnableTimeAnimation"))
+	bool bLoopAnimation;
+
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -139,7 +152,7 @@ public:
 	
 private:
 	
-	TMap<int, TMap<int, float>> XYZs;
+	TMap<float, TMap<int, TMap<int, int>>> XYZs;
 	
 	int MaxX, MinX, MaxY,MinY;
 	float MaxZ, MinZ;
@@ -174,5 +187,17 @@ private:
 	
 	UPROPERTY()
 	TArray<UTextRenderComponent*> StatisticalLineLabels;
+
+	// 时间动画相关
+	TArray<float> AllTimePoints;
+	
+	// 时间范围
+	float MinTime = -1.0f;
+	float MaxTime = -1.0f;
+
+	/**
+ * 更新时间点显示
+ */
+	void UpdateTimePointDisplay();
 
 };

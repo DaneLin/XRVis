@@ -97,7 +97,7 @@ void AXVChartBase::UpdateOnMouseEnterOrLeft()
 
 uint32_t AXVChartBase::GetSectionIndexOfLOD(uint32_t SectionIndex)
 {
-	return SectionIndex + LODInfos[CurrentLOD].LODOffset;
+	return SectionIndex + TimedSectionInfos[CurrentTimePoint].LODInfos[CurrentLOD].LODOffset;
 }
 
 void AXVChartBase::SetValue(const FString& InValue)
@@ -112,8 +112,6 @@ void AXVChartBase::PrepareMeshSections()
 {
 	ProceduralMeshComponent->ClearAllMeshSections();
 	ProceduralMeshComponent->ClearCollisionConvexMeshes();
-	LODInfos.Empty();
-	LODInfos.SetNum(GenerateLODCount);
 	SectionInfos.Empty();
 	SectionInfos.SetNum(GenerateLODCount * TotalCountOfValue + 1);
 	LabelComponents.Empty();
@@ -121,7 +119,7 @@ void AXVChartBase::PrepareMeshSections()
 	VerticesBackup.Empty();
 }
 
-void AXVChartBase::DrawMeshLOD(int LODLevel, double Rate)
+void AXVChartBase::DrawMeshLOD(int LODLevel, float NewTimePoint, double Rate)
 {
 	if (bEnableGPU)
 	{
@@ -133,9 +131,9 @@ void AXVChartBase::DrawMeshLOD(int LODLevel, double Rate)
 	{
 		if (CurrentLOD != -1)
 		{
-			for (int Index = 0; Index < LODInfos[CurrentLOD].LODCount * Rate; ++Index)
+			for (int Index = 0; Index < TimedSectionInfos[CurrentTimePoint].LODInfos[CurrentLOD].LODCount * Rate; ++Index)
 			{
-				int SectionIndex = Index + LODInfos[CurrentLOD].LODOffset;
+				int SectionIndex = Index + TimedSectionInfos[CurrentTimePoint].LODInfos[CurrentLOD].LODOffset + TimedSectionInfos[CurrentTimePoint].SectionOffset ;
 				ProceduralMeshComponent->SetMeshSectionVisible(SectionIndex, false);
 			}
 		}
@@ -144,9 +142,27 @@ void AXVChartBase::DrawMeshLOD(int LODLevel, double Rate)
 	}
 	if(bUpdateLOD || Rate < 1)
 	{
-		for (int Index = 0; Index < LODInfos[CurrentLOD].LODCount * Rate; ++Index)
+		for (int Index = 0; Index < TimedSectionInfos[CurrentTimePoint].LODInfos[CurrentLOD].LODCount * Rate; ++Index)
 		{
-			int SectionIndex = Index + LODInfos[CurrentLOD].LODOffset;
+			int SectionIndex = Index + TimedSectionInfos[CurrentTimePoint].LODInfos[CurrentLOD].LODOffset + TimedSectionInfos[CurrentTimePoint].SectionOffset ;
+			ProceduralMeshComponent->SetMeshSectionVisible(SectionIndex, true);
+		}
+	}
+
+	if(NewTimePoint != CurrentTimePoint)
+	{
+		if (CurrentLOD != -1)
+		{
+			for (int Index = 0; Index < TimedSectionInfos[CurrentTimePoint].LODInfos[CurrentLOD].LODCount * Rate; ++Index)
+			{
+				int SectionIndex = Index + TimedSectionInfos[CurrentTimePoint].LODInfos[CurrentLOD].LODOffset + TimedSectionInfos[CurrentTimePoint].SectionOffset ;
+				ProceduralMeshComponent->SetMeshSectionVisible(SectionIndex, false);
+			}
+		}
+		CurrentTimePoint = NewTimePoint;
+		for (int Index = 0; Index < TimedSectionInfos[CurrentTimePoint].LODInfos[CurrentLOD].LODCount * Rate; ++Index)
+		{
+			int SectionIndex = Index + TimedSectionInfos[CurrentTimePoint].LODInfos[CurrentLOD].LODOffset + TimedSectionInfos[CurrentTimePoint].SectionOffset ;
 			ProceduralMeshComponent->SetMeshSectionVisible(SectionIndex, true);
 		}
 	}
@@ -1259,7 +1275,7 @@ float AXVChartBase::CalculateAdjustedHeight(float RawHeight) const
 	return FMath::Max(0.1f, AdjustedHeight);
 }
 
-void AXVChartBase::UpdateLOD(double Rate)
+void AXVChartBase::UpdateLOD(double Rate, float NewTimePoint)
 {
 	switch (LODType)
 	{
@@ -1269,7 +1285,7 @@ void AXVChartBase::UpdateLOD(double Rate)
 			FVector ActorLocation = GetActorLocation();
 			float Distance = (CameraLocation - ActorLocation).Length();
 			int NewLODLevel = Algo::LowerBound(LODSwitchDis, Distance) - 1;
-			DrawMeshLOD(NewLODLevel, Rate);
+			DrawMeshLOD(NewLODLevel,NewTimePoint, Rate);
 		}
 		break;
 	case ELODType::ScreenSize:
@@ -1288,7 +1304,7 @@ void AXVChartBase::UpdateLOD(double Rate)
 			float CurrentScreenSize = ScreenRadius * 2.f;
 
 			int NewLODLevel = Algo::LowerBound(LODSwitchSize, CurrentScreenSize);
-			DrawMeshLOD(GenerateLODCount - NewLODLevel, Rate);
+			DrawMeshLOD(GenerateLODCount - NewLODLevel,NewTimePoint, Rate);
 		}
 		break;
 	default:

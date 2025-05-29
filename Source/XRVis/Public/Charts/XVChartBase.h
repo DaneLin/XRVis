@@ -54,6 +54,18 @@ struct FLODInfo
 	int LODCount;
 };
 
+USTRUCT(BlueprintType)
+struct FTimeSectionInfo
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LOD")
+	int SectionOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="LOD")
+	TArray<FLODInfo> LODInfos;
+};
+
 // 添加统计轴线结构体
 USTRUCT(BlueprintType)
 struct FXVStatisticalLine
@@ -243,10 +255,6 @@ public:
 	/* 生成LOD数量 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="生成LOD数量", ClampMin = "1"))
 	int GenerateLODCount = 4;
-
-	/* LOD信息 */
-	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD信息"))
-	TArray<FLODInfo> LODInfos;
 	
 	/* 当前LOD级别 */
 	UPROPERTY(EditAnywhere, Category = "Chart Property | LOD", meta=(ToolTip="LOD级别"))
@@ -278,7 +286,7 @@ public:
 	void PrepareMeshSections();
 
 	UFUNCTION(BlueprintCallable)
-	void DrawMeshLOD(int LODLevel, double Rate = 1);
+	void DrawMeshLOD(int LODLevel, float NewTimePoint = 0.0f,double Rate = 1);
 
 	virtual void SetValue(const FString& InValue);
 	virtual void SetStyle();
@@ -467,7 +475,7 @@ public:
 	virtual float CalculateAdjustedHeight(float RawHeight) const;
 
 	UFUNCTION(BlueprintCallable, Category="Chart Property | LOD")
-	virtual void UpdateLOD(double Rate = 1);
+	virtual void UpdateLOD(double Rate = 1, float NewTimePoint = 0.f);
 
 	/**
 	 * 检查值是否满足任一触发条件
@@ -535,6 +543,16 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Chart Property | Debugging", meta=(AllowPrivateAccess = true))
 	TArray<FXVChartSectionInfo> SectionInfos;
 
+	UPROPERTY(EditAnywhere, Category="Chart Property | Time Animation", meta=(AllowPrivateAccess = true))
+	TMap<float, FTimeSectionInfo> TimedSectionInfos;
+	
+	/** 当前显示的时间点 */
+	UPROPERTY(EditAnywhere, Category="Chart Property | Time Animation", meta=(EditCondition="bEnableTimeAnimation"))
+	float CurrentTimePoint;
+	
+	bool bIsAnimationPlaying = false;
+	float AnimationCurrentTime = 0.0f;
+	
 	/* 顶点备份 */
 	TArray<TArray<FVector>> VerticesBackup;
 

@@ -49,6 +49,15 @@ AXVLineChart::AXVLineChart()
 	// 初始化统计轴线相关数组
 	StatisticalLineMeshes.Empty();
 	StatisticalLineLabels.Empty();
+	
+	// 初始化时间动画相关属性
+	bEnableTimeAnimation = false;
+	AnimationSpeed = 1.0f;
+	CurrentTimePoint = 0.0f;
+	bLoopAnimation = true;
+	TimeAxisInterval = 1.0f;
+	bIsAnimationPlaying = false;
+	AnimationCurrentTime = 0.0f;
 }
 
 void AXVLineChart::NotifyActorOnClicked(FKey ButtonPressed)
@@ -214,7 +223,7 @@ void AXVLineChart::Tick(float DeltaTime)
 		return;
 	}
 
-	if(!IsHidden())
+	if(!IsHidden() &&!bEnableTimeAnimation)
 	{
 		if (bEnableEnterAnimation && CurrentBuildTime < BuildTime)
 		{
@@ -227,6 +236,34 @@ void AXVLineChart::Tick(float DeltaTime)
 		}
 	}
 	
+	// 处理时间动画
+	if (bEnableTimeAnimation && AllTimePoints.Num() > 1)
+	{
+		AnimationCurrentTime += DeltaTime * AnimationSpeed;
+		
+		// 计算当前应该显示的时间点
+		float AnimationProgress = AnimationCurrentTime / (MaxTime - MinTime);
+		
+		if (AnimationProgress >= 1.0f)
+		{
+			if (bLoopAnimation)
+			{
+				AnimationCurrentTime = 0.0f;
+				AnimationProgress = 0.0f;
+			}
+			else
+			{
+				AnimationProgress = 1.0f;
+			}
+		}
+		
+		// 更新当前时间点
+		float NewTimePoint = AllTimePoints[FMath::Floor(AllTimePoints.Num() * AnimationProgress)];
+		if (XYZs.Contains(NewTimePoint))
+		{
+			UpdateLOD(1, NewTimePoint);
+		}
+	}
 }
 
 void AXVLineChart::Create3DLineChart(const FString& Data,
@@ -245,43 +282,128 @@ void AXVLineChart::SetValue(const FString& InValue)
 
 	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(InValue);
 
-	TArray<TSharedPtr<FJsonValue>> Value3DJsonValueArray;
+	TArray<TSharedPtr<FJsonValue>> Value4DJsonValueArray;
 
 	TotalCountOfValue = 0;
-	if (FJsonSerializer::Deserialize(Reader, Value3DJsonValueArray))
+	if (FJsonSerializer::Deserialize(Reader, Value4DJsonValueArray))
 	{
-		for (const TSharedPtr<FJsonValue>& Value3DJsonValue :
-		     Value3DJsonValueArray)
+		for (const TSharedPtr<FJsonValue>& Value4DJsonValue : Value4DJsonValueArray)
 		{
-			TArray<TSharedPtr<FJsonValue>> Values = Value3DJsonValue->AsArray();
+			TArray<TSharedPtr<FJsonValue>> Values = Value4DJsonValue->AsArray();
 
-			if (Values.Num() != 3) return;
-			int Y = Values[0]->AsNumber();
-			int X = Values[1]->AsNumber();
-			int V = Values[2]->AsNumber();
-
-			MaxX = FMath::Max(MaxX, X);
-			MinX = FMath::Min(MinX, X);
-			MaxY = FMath::Max(MaxY, Y);
-			MinY = FMath::Min(MinY, Y);
-			MaxZ = FMath::Max(MaxZ, V);
-			MinZ = FMath::Min(MinZ, V);
-
-			if (XYZs.Contains(Y))
+			// 支持四维数据 [Time, Y, X, Z] 或保持向后兼容三维数据 [Y, X, Z]
+			if (Values.Num() == 4)
 			{
-				XYZs[Y].Add(X, V);
+				// 四维数据格式：[Time, Y, X, Z]
+				float Time = Values[3]->AsNumber();
+				int X = Values[1]->AsNumber();
+				int Y = Values[0]->AsNumber();
+				int V = Values[2]->AsNumber();
+
+				if(MinTime == -1) MinTime = Time;
+				else MinTime = FMath::Min(MinTime, Time);
+
+				if(MaxTime == -1) MaxTime = Time;
+				else MaxTime = FMath::Max(MaxTime, Time);
+				
+				MaxX = FMath::Max(MaxX, X);
+				MinX = FMath::Min(MinX, X);
+				MaxY = FMath::Max(MaxY, Y);
+				MinY = FMath::Min(MinY, Y);
+				MaxZ = FMath::Max(MaxZ, V);
+				MinZ = FMath::Min(MinZ, V);
+
+				// 使用三层嵌套结构：Time -> Y -> X -> V
+				if (XYZs.Contains(Time))
+				{
+					if (XYZs[Time].Contains(Y))
+					{
+						XYZs[Time][Y].Add(X, V);
+					}
+					else
+					{
+						TMap<int, int> M;
+						M.Add(X, V);
+						XYZs[Time].Add(Y, M);
+					}
+				}
+				else
+				{
+					TMap<int, int> M;
+					M.Add(X, V);
+					TMap<int, TMap<int, int>> YMap;
+					YMap.Add(Y, M);
+					XYZs.Add(Time, YMap);
+				}
+				
+				// 更新列数统计
+				ColCounts = FMath::Max(ColCounts, XYZs[Time][Y].Num());
+				TotalCountOfValue++;
+			}
+			else if (Values.Num() == 3)
+			{
+				// 向后兼容：三维数据格式 [Y, X, Z]，默认时间为0
+				float Time = 0.0f;
+				int X = Values[1]->AsNumber();
+				int Y = Values[0]->AsNumber();
+				int V = Values[2]->AsNumber();
+
+				MinTime = MaxTime = Time;
+
+				MaxX = FMath::Max(MaxX, X);
+				MinX = FMath::Min(MinX, X);
+				MaxY = FMath::Max(MaxY, Y);
+				MinY = FMath::Min(MinY, Y);
+				MaxZ = FMath::Max(MaxZ, V);
+				MinZ = FMath::Min(MinZ, V);
+
+				// 使用默认时间0
+				if (XYZs.Contains(Time))
+				{
+					if (XYZs[Time].Contains(Y))
+					{
+						XYZs[Time][Y].Add(X, V);
+					}
+					else
+					{
+						TMap<int, int> M;
+						M.Add(X, V);
+						XYZs[Time].Add(Y, M);
+					}
+				}
+				else
+				{
+					TMap<int, int> M;
+					M.Add(X, V);
+					TMap<int, TMap<int, int>> YMap;
+					YMap.Add(Y, M);
+					XYZs.Add(Time, YMap);
+				}
+				
+				ColCounts = FMath::Max(ColCounts, XYZs[Time][Y].Num());
+				TotalCountOfValue++;
 			}
 			else
 			{
-				TMap<int, int> M;
-				M.Add(X, V);
-				XYZs.Add(Y, M);
+				UE_LOG(LogTemp, Warning, TEXT("AXVLineChart: 数据格式错误，期望3维或4维数组，实际为%d维"), Values.Num());
+				return;
 			}
-			ColCounts = FMath::Max(ColCounts, XYZs[Y].Num());
-			TotalCountOfValue++;
 		}
 	}
-	RowCounts = XYZs.Num();
+	
+	// 计算总行数（所有时间点的Y值数量）
+	RowCounts = 0;
+	for (const auto& TimeEntry : XYZs)
+	{
+		RowCounts = FMath::Max(RowCounts, TimeEntry.Value.Num());
+	}
+	
+	// 初始化时间相关变量
+	AllTimePoints.Empty();
+	XYZs.GetKeys(AllTimePoints);
+	
+	CurrentTimePoint = MinTime;
+	
 	LineSelection.SetNum(RowCounts);
 	TotalSelection.SetNum(TotalCountOfValue);
 
@@ -307,73 +429,93 @@ void AXVLineChart::GenerateLOD()
 	{
 		AutoAdjustZAxis(ZAxisMarginPercent);
 	}
-
-	int LODOffset = 0;
-	for (int LODIndex = 0; LODIndex < GenerateLODCount; ++LODIndex)
+	SectionInfos.SetNum(SectionInfos.Num() * AllTimePoints.Num());
+	int SectionOffset = 0;
+	for (const auto& TimeEntry : XYZs)
 	{
-		int CurrentIndex = 0;
-		for (int RowIndex = 0; RowIndex < RowCounts; RowIndex++)
+		float CurrentTime = TimeEntry.Key;
+		TArray<FLODInfo> CurrentLODInfo;
+		CurrentLODInfo.SetNum(GenerateLODCount);
+		int LODOffset = 0;
+		for (int LODIndex = 0; LODIndex < GenerateLODCount; ++LODIndex)
 		{
-			CurColCount = XYZs[RowIndex].Num();
-
-			for (int ColIndex = 0; ColIndex < CurColCount; ColIndex += LODIndex + 1)
+			const TMap<int, TMap<int, int>>& TimeData = TimeEntry.Value;
+			int CurrentIndex = 0;
+			// 遍历当前时间点的所有Y值（行）
+			for (const auto& RowEntry : TimeData)
 			{
-				FVector Position(XAxisInterval * ColIndex, YAxisInterval * RowIndex, 0);
-
-				int NewColIndex = FMath::Min(CurColCount - 1, ColIndex + LODIndex + 1);
-
-				// 获取原始高度
-				float RawHeight = XYZs[RowIndex][ColIndex];
-				float RawNextHeight = XYZs[RowIndex][NewColIndex];
-
-				// 应用Z轴调整
-				float AdjustedHeight = CalculateAdjustedHeight(RawHeight);
-				float AdjustedNextHeight = CalculateAdjustedHeight(RawNextHeight);
-
-				size_t CreatedSectionIndex = CurrentIndex + LODOffset;
-
-				if (LODIndex == 0)
-				{
-					SectionsHeight[CurrentIndex] =
-						FMath::Max(AdjustedHeight, AdjustedNextHeight);
-				}
-
-				if (LineChartStyle != ELineChartStyle::Point)
-				{
-					XVChartUtils::CreateBox(SectionInfos,CreatedSectionIndex, Position,
-					                        YAxisInterval, Width, AdjustedHeight,
-					                        AdjustedNextHeight,
-					                        Colors[RowIndex % Colors.Num()]);
-				}
-				else
-				{
-					int LODNumSphereSlices = FMath::Max(3, NumSphereSlices - LODIndex * NumLODReduceFactor);
-					int LODNumSphereStacks = FMath::Max(2, NumSphereStacks - LODIndex * NumLODReduceFactor);
-
-					XVChartUtils::CreateSphere(SectionInfos, CreatedSectionIndex,
-					                           Position + FVector(0, 0, AdjustedHeight),
-					                           SphereRadius, LODNumSphereSlices,
-					                           LODNumSphereStacks,
-					                           Colors[RowIndex % Colors.Num()]);
-				}
-
-				if (LODIndex == 0)
-				{
-					DynamicMaterialInstances[CurrentIndex] = UMaterialInstanceDynamic::Create(BaseMaterial, this);
-					DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
-					// 使用原始高度值作为标签文本
-					LabelComponents[CurrentIndex] = XVChartUtils::CreateTextRenderComponent(this, FText::FromString(FString::Printf(TEXT("%.2f"), RawHeight)),FColor::Cyan, false);
-				}
-				ProceduralMeshComponent->SetMaterial(CreatedSectionIndex, DynamicMaterialInstances[CurrentIndex]);
-				DrawMeshSection(CreatedSectionIndex);
-				ProceduralMeshComponent->SetMeshSectionVisible(CreatedSectionIndex, false);
+				int RowIndex = RowEntry.Key;
+				const TMap<int, int>& RowData = RowEntry.Value;
 				
-				CurrentIndex++;
+				CurColCount = RowData.Num();
+				
+				// 获取排序后的X值（列索引）
+				TArray<int> SortedXIndices;
+				RowData.GetKeys(SortedXIndices);
+				SortedXIndices.Sort();
+				
+				// 遍历当前行的所有X值（列）
+				for (int ColIdx = 0; ColIdx < SortedXIndices.Num(); ColIdx += LODIndex + 1)
+				{
+					int ColIndex = SortedXIndices[ColIdx];
+					
+					FVector Position(XAxisInterval * ColIndex, YAxisInterval * RowIndex,0);
+
+					int NextColIdx = FMath::Min(SortedXIndices.Num() - 1, ColIdx + LODIndex + 1);
+					int NextColIndex = SortedXIndices[NextColIdx];
+
+					// 获取原始高度
+					float RawHeight = RowData[ColIndex];
+					float RawNextHeight = RowData[NextColIndex];
+
+					// 应用Z轴调整
+					float AdjustedHeight = CalculateAdjustedHeight(RawHeight);
+					float AdjustedNextHeight = CalculateAdjustedHeight(RawNextHeight);
+
+					size_t CreatedSectionIndex = CurrentIndex + LODOffset + SectionOffset;
+
+					if (LODIndex == 0)
+					{
+						SectionsHeight[CurrentIndex] = FMath::Max(AdjustedHeight, AdjustedNextHeight);
+					}
+
+					if (LineChartStyle != ELineChartStyle::Point)
+					{
+						XVChartUtils::CreateBox(SectionInfos, CreatedSectionIndex, Position,YAxisInterval, Width, AdjustedHeight,AdjustedNextHeight,Colors[RowIndex % Colors.Num()]);
+					}
+					else
+					{
+						int LODNumSphereSlices = FMath::Max(3, NumSphereSlices - LODIndex * NumLODReduceFactor);
+						int LODNumSphereStacks = FMath::Max(2, NumSphereStacks - LODIndex * NumLODReduceFactor);
+
+						XVChartUtils::CreateSphere(SectionInfos, CreatedSectionIndex,
+						                           Position + FVector(0, 0, AdjustedHeight),
+						                           SphereRadius, LODNumSphereSlices,
+						                           LODNumSphereStacks,
+						                           Colors[RowIndex % Colors.Num()]);
+					}
+
+					if (LODIndex == 0)
+					{
+						DynamicMaterialInstances[CurrentIndex] = UMaterialInstanceDynamic::Create(BaseMaterial, this);
+						DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue("EmissiveColor", EmissiveColor);
+						// 使用原始高度值和时间信息作为标签文本
+						FString LabelText = FString::Printf(TEXT("T:%.1f V:%.2f"), CurrentTime, RawHeight);
+						LabelComponents[CurrentIndex] = XVChartUtils::CreateTextRenderComponent(this, FText::FromString(LabelText), FColor::Cyan, false);
+					}
+					ProceduralMeshComponent->SetMaterial(CreatedSectionIndex, DynamicMaterialInstances[CurrentIndex]);
+					DrawMeshSection(CreatedSectionIndex);
+					ProceduralMeshComponent->SetMeshSectionVisible(CreatedSectionIndex, false);
+					
+					CurrentIndex++;
+				}
 			}
+			CurrentLODInfo[LODIndex].LODCount = CurrentIndex;
+			CurrentLODInfo[LODIndex].LODOffset = LODOffset;
+			LODOffset += CurrentIndex;
 		}
-		LODInfos[LODIndex].LODCount = CurrentIndex;
-		LODInfos[LODIndex].LODOffset = LODOffset;
-		LODOffset += CurrentIndex;
+		TimedSectionInfos.Add(CurrentTime, {SectionOffset,std::move(CurrentLODInfo)});
+		SectionOffset += LODOffset;
 	}
 
 	// 如果启用了参考值高亮，应用高亮效果
@@ -436,38 +578,41 @@ void AXVLineChart::ApplyReferenceHighlight()
 
 	// 遍历所有线段/点，检查是否符合参考值条件
 	size_t CurrentIndex = 0;
-	for (int RowIndex = 0; RowIndex < XYZs.Num(); RowIndex++)
+	
+	for (const auto& TimeEntry : XYZs)
 	{
-		const auto& Row = XYZs[RowIndex];
-		for (const auto& XZPair : Row)
+		for (const auto& RowEntry : TimeEntry.Value)
 		{
-			// 使用原始高度值进行比较，而不是调整后的高度
-			int RawValue = XZPair.Value; // Z值
-
-			// 检查值是否符合参考值条件
-			bool bMatchesReference = CheckAgainstReference(RawValue);
-
-			if (bMatchesReference)
+			for (const auto& ColEntry : RowEntry.Value)
 			{
-				// 符合条件，应用高亮颜色和发光效果
-				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
-					"EmissiveColor", ReferenceHighlightColor);
-				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
-					"EmissiveIntensity", EmissiveIntensity);
-			}
-			else
-			{
-				// 不符合条件，恢复默认颜色和发光效果
-				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
-					"EmissiveColor", EmissiveColor);
-				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
-					"EmissiveIntensity", 0);
-			}
+				// 使用原始高度值进行比较，而不是调整后的高度
+				int RawValue = ColEntry.Value; // Z值
 
-			// 更新网格部分
-			UpdateMeshSection(CurrentIndex);
+				// 检查值是否符合参考值条件
+				bool bMatchesReference = CheckAgainstReference(RawValue);
 
-			CurrentIndex++;
+				if (bMatchesReference)
+				{
+					// 符合条件，应用高亮颜色和发光效果
+					DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
+						"EmissiveColor", ReferenceHighlightColor);
+					DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
+						"EmissiveIntensity", EmissiveIntensity);
+				}
+				else
+				{
+					// 不符合条件，恢复默认颜色和发光效果
+					DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
+						"EmissiveColor", EmissiveColor);
+					DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
+						"EmissiveIntensity", 0);
+				}
+
+				// 更新网格部分
+				UpdateMeshSection(CurrentIndex);
+
+				CurrentIndex++;
+			}
 		}
 	}
 }
@@ -515,12 +660,15 @@ TArray<float> AXVLineChart::GetAllDataValues() const
 {
 	TArray<float> Values;
 
-	// 收集所有Z值（高度值）
-	for (const auto& Row : XYZs)
+	// 收集所有Z值（高度值）从四维数据结构中
+	for (const auto& TimeEntry : XYZs)
 	{
-		for (const auto& Item : Row.Value)
+		for (const auto& RowEntry : TimeEntry.Value)
 		{
-			Values.Add(Item.Value);
+			for (const auto& ColEntry : RowEntry.Value)
+			{
+				Values.Add(ColEntry.Value);
+			}
 		}
 	}
 
@@ -681,39 +829,57 @@ void AXVLineChart::ApplyValueTriggerConditions()
 
 	// 遍历所有线段/点，检查是否符合触发条件
 	size_t CurrentIndex = 0;
-	for (int RowIndex = 0; RowIndex < XYZs.Num(); RowIndex++)
+	
+	for (const auto& TimeEntry : XYZs)
 	{
-		const auto& Row = XYZs[RowIndex];
-		for (const auto& XZPair : Row)
+		for (const auto& RowEntry : TimeEntry.Value)
 		{
-			// 使用原始高度值进行比较
-			int RawValue = XZPair.Value; // Z值
-
-			// 检查值是否满足任何触发条件
-			FLinearColor HighlightColor;
-			bool bMatchesTrigger = CheckValueTriggerConditions(RawValue, HighlightColor);
-
-			if (bMatchesTrigger)
+			for (const auto& ColEntry : RowEntry.Value)
 			{
-				// 符合条件，应用高亮颜色和发光效果
-				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
-					"EmissiveColor", HighlightColor);
-				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
-					"EmissiveIntensity", EmissiveIntensity);
-			}
-			else
-			{
-				// 不符合条件，恢复默认颜色和发光效果
-				DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
-					"EmissiveColor", EmissiveColor);
-				DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
-					"EmissiveIntensity", 0);
-			}
+				// 使用原始高度值进行比较
+				int RawValue = ColEntry.Value; // Z值
 
-			// 更新网格部分
-			UpdateMeshSection(CurrentIndex);
+				// 检查值是否满足任何触发条件
+				FLinearColor HighlightColor;
+				bool bMatchesTrigger = CheckValueTriggerConditions(RawValue, HighlightColor);
 
-			CurrentIndex++;
+				if (bMatchesTrigger)
+				{
+					// 符合条件，应用高亮颜色和发光效果
+					DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
+						"EmissiveColor", HighlightColor);
+					DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
+						"EmissiveIntensity", EmissiveIntensity);
+				}
+				else
+				{
+					// 不符合条件，恢复默认颜色和发光效果
+					DynamicMaterialInstances[CurrentIndex]->SetVectorParameterValue(
+						"EmissiveColor", EmissiveColor);
+					DynamicMaterialInstances[CurrentIndex]->SetScalarParameterValue(
+						"EmissiveIntensity", 0);
+				}
+
+				// 更新网格部分
+				UpdateMeshSection(CurrentIndex);
+
+				CurrentIndex++;
+			}
 		}
 	}
+}
+
+TArray<float> AXVLineChart::GetAllTimePoints() const
+{
+	return AllTimePoints;
+}
+
+void AXVLineChart::UpdateTimePointDisplay()
+{
+	if (!bEnableTimeAnimation)
+	{
+		return;
+	}
+
+	UpdateLOD();
 }

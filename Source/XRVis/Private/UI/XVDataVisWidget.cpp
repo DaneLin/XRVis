@@ -97,6 +97,9 @@ void UXVDataVisWidget::OnDrawClicked()
     if (TargetChart)
     {
         TargetChart->DrawWithGPU();
+        
+        GetWorld()->GetFirstPlayerController()->ConsoleCommand(TEXT("stat gpu"), true);
+        
         if (StatusText)
         {
             StatusText->SetText(FText::FromString(TEXT("绘制完成")));
